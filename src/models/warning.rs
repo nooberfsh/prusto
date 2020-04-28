@@ -3,12 +3,13 @@ use serde::Deserialize;
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Warning {
-    warning_code: Code,
-    message: String,
+    pub warning_code: Code,
+    pub message: String,
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Code {
-    code: i32,
-    name: String,
+    pub code: i32,
+    pub name: String,
 }
