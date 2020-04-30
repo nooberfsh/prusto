@@ -42,9 +42,12 @@ pub struct RowFieldName {
 #[derive(Deserialize, Debug, Eq, PartialEq)]
 #[serde(tag = "kind", content = "value")]
 pub enum ClientTypeSignatureParameter {
-    TYPE_SIGNATURE(TypeSignature),
-    NAMED_TYPE_SIGNATURE(NamedTypeSignature),
-    LONG_LITERAL(u64),
+    #[serde(rename = "TYPE_SIGNATURE")]
+    TypeSignature(TypeSignature),
+    #[serde(rename = "NAMED_TYPE_SIGNATURE")]
+    NamedTypeSignature(NamedTypeSignature),
+    #[serde(rename = "LONG_LITERAL")]
+    LongLiteral(u64),
 }
 
 #[cfg(test)]
@@ -72,7 +75,7 @@ mod tests {
             s,
             TypeSignature {
                 raw_type: PrestoTy::VARCHAR,
-                arguments: vec![ClientTypeSignatureParameter::LONG_LITERAL(2147483647)],
+                arguments: vec![ClientTypeSignatureParameter::LongLiteral(2147483647)],
                 type_arguments: (),
                 literal_arguments: (),
             }
@@ -110,10 +113,10 @@ mod tests {
             s,
             TypeSignature {
                 raw_type: PrestoTy::MAP,
-                arguments: vec![ClientTypeSignatureParameter::TYPE_SIGNATURE(
+                arguments: vec![ClientTypeSignatureParameter::TypeSignature(
                     TypeSignature {
                         raw_type: PrestoTy::VARCHAR,
-                        arguments: vec![ClientTypeSignatureParameter::LONG_LITERAL(3)],
+                        arguments: vec![ClientTypeSignatureParameter::LongLiteral(3)],
                         type_arguments: (),
                         literal_arguments: (),
                     }
@@ -156,7 +159,7 @@ mod tests {
             s,
             TypeSignature {
                 raw_type: PrestoTy::ROW,
-                arguments: vec![ClientTypeSignatureParameter::NAMED_TYPE_SIGNATURE(
+                arguments: vec![ClientTypeSignatureParameter::NamedTypeSignature(
                     NamedTypeSignature {
                         field_name: Some(RowFieldName {
                             name: "y".to_string(),
