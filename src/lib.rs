@@ -1,6 +1,6 @@
 pub mod client;
-pub mod error;
 mod constants;
+pub mod error;
 mod models;
 
 pub use models::*;
