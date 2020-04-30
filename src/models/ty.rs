@@ -153,7 +153,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_se() {
+    fn test_ser() {
         let ty = PrestoTy::CHAR;
         let s = serde_json::to_string(&ty).unwrap();
         assert_eq!(s, "\"char\"");
