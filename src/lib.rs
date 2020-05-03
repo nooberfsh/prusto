@@ -2,6 +2,7 @@ pub mod client;
 mod constants;
 pub mod error;
 mod models;
+pub mod types;
 
 pub use models::*;
 

@@ -1,10 +1,10 @@
 use std::fmt;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use super::PrestoTy;
 
-#[derive(Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Column {
     pub name: String,
@@ -13,7 +13,7 @@ pub struct Column {
     pub type_signature: Option<TypeSignature>,
 }
 
-#[derive(Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TypeSignature {
     pub raw_type: PrestoTy,
@@ -24,14 +24,14 @@ pub struct TypeSignature {
     literal_arguments: (), //deprecated
 }
 
-#[derive(Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct NamedTypeSignature {
     field_name: Option<RowFieldName>,
     type_signature: TypeSignature,
 }
 
-#[derive(Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct RowFieldName {
     pub name: String,
@@ -39,7 +39,7 @@ pub struct RowFieldName {
     delimited: (), // deprecated
 }
 
-#[derive(Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[serde(tag = "kind", content = "value")]
 pub enum ClientTypeSignatureParameter {
     #[serde(rename = "TYPE_SIGNATURE")]
