@@ -113,14 +113,12 @@ mod tests {
             s,
             TypeSignature {
                 raw_type: PrestoTy::MAP,
-                arguments: vec![ClientTypeSignatureParameter::TypeSignature(
-                    TypeSignature {
-                        raw_type: PrestoTy::VARCHAR,
-                        arguments: vec![ClientTypeSignatureParameter::LongLiteral(3)],
-                        type_arguments: (),
-                        literal_arguments: (),
-                    }
-                )],
+                arguments: vec![ClientTypeSignatureParameter::TypeSignature(TypeSignature {
+                    raw_type: PrestoTy::VARCHAR,
+                    arguments: vec![ClientTypeSignatureParameter::LongLiteral(3)],
+                    type_arguments: (),
+                    literal_arguments: (),
+                })],
                 type_arguments: (),
                 literal_arguments: (),
             }
