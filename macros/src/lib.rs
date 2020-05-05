@@ -1,7 +1,7 @@
-use syn::*;
+use proc_macro2::*;
 use quote::*;
 use syn::spanned::Spanned;
-use proc_macro2::*;
+use syn::*;
 
 #[proc_macro_derive(Presto)]
 pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -16,19 +16,16 @@ pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
     let name = &data.ident;
     let fields: Vec<Field> = match data.fields {
-        Fields::Named(d) => {
-            d.named.into_iter().collect()
-        },
-        Fields::Unnamed(d) => {
-            return Err(Error::new(d.span(), "field must be named"))
-        },
+        Fields::Named(d) => d.named.into_iter().collect(),
+        Fields::Unnamed(d) => return Err(Error::new(d.span(), "field must be named")),
         Fields::Unit => return Err(Error::new(data.span(), "field can not be unit")),
     };
 
-    let keys = fields.iter().map(|f|f.ident.as_ref().unwrap());
-    let keys_lit = keys.clone()
+    let keys = fields.iter().map(|f| f.ident.as_ref().unwrap());
+    let keys_lit = keys
+        .clone()
         .map(|ident| LitStr::new(&format!("{}", ident), ident.span()));
-    let types = fields.iter().map(|f|&f.ty);
+    let types = fields.iter().map(|f| &f.ty);
     let types2 = types.clone();
 
     let (impl_generics, ty_generics, where_clause) = data.generics.split_for_impl();

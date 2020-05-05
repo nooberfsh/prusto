@@ -1,13 +1,14 @@
 #![allow(incomplete_features)]
+#![feature(type_alias_impl_trait)]
 #![feature(generic_associated_types)]
 
 pub mod error;
 mod models;
 pub mod types;
 
+pub use macros::*;
 pub use models::*;
 pub use types::*;
-pub use macros::*;
 
 #[cfg(test)]
 mod tests {
