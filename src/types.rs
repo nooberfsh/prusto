@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use serde::ser::{self, Serialize, SerializeSeq, SerializeStruct, Serializer};
+use serde::ser::{self, Serialize, SerializeStruct, Serializer, SerializeSeq};
 
 use crate::models;
 
@@ -101,6 +101,7 @@ pub struct DataSet<T: Presto> {
     data: Vec<T>,
 }
 
+
 impl<T: Presto> Serialize for DataSet<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -127,9 +128,35 @@ impl<T: Presto> Serialize for DataSet<T> {
                 )))
             }
         };
-        let data = { todo!() };
+        let data = SerializeIterator {
+          iter: self.data.iter().map(|d| d.value())  ,
+            size: Some(self.data.len()),
+        };
         state.serialize_field("columns", &columns)?;
         state.serialize_field("data", &data)?;
         state.end()
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+// serialize iterator
+// https://github.com/serde-rs/serde/issues/571#issuecomment-252004224
+struct SerializeIterator<T: Serialize, I: Iterator<Item = T> + Clone> {
+    iter: I,
+    size: Option<usize>,
+}
+
+impl<T, I> Serialize for SerializeIterator<T, I>
+    where I: Iterator<Item = T> + Clone, T: Serialize {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+    {
+        let mut s = serializer.serialize_seq(self.size)?;
+        for e in self.iter.clone() {
+            s.serialize_element(&e)?;
+        }
+        s.end()
     }
 }
