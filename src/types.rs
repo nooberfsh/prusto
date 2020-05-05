@@ -14,6 +14,7 @@ pub trait Presto {
     fn ty() -> PrestoTy;
 }
 
+// TODO: can avoid alloc? use something like &'static PresotTy
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PrestoTy {
     Integer,
@@ -25,24 +26,24 @@ pub enum PrestoTy {
 }
 
 impl PrestoTy {
-    fn type_signature(&self) -> models::TypeSignature {
+    pub fn type_signature(&self) -> models::TypeSignature {
         todo!()
     }
 
-    fn full_type(&self) -> String {
+    pub fn full_type(&self) -> String {
         todo!()
     }
 
-    fn raw_type(&self) -> models::PrestoTy {
+    pub fn raw_type(&self) -> models::RawPrestoTy {
         use PrestoTy::*;
 
         match self {
-            Integer => models::PrestoTy::INTEGER,
-            Varchar => models::PrestoTy::VARCHAR,
-            Tuple(_) => models::PrestoTy::ROW,
-            Row(_) => models::PrestoTy::ROW,
-            Array(_) => models::PrestoTy::ARRAY,
-            Map(_, _) => models::PrestoTy::MAP,
+            Integer => models::RawPrestoTy::Integer,
+            Varchar => models::RawPrestoTy::VarChar,
+            Tuple(_) => models::RawPrestoTy::Row,
+            Row(_) => models::RawPrestoTy::Row,
+            Array(_) => models::RawPrestoTy::Array,
+            Map(_, _) => models::RawPrestoTy::Map,
         }
     }
 }

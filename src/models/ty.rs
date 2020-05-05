@@ -4,113 +4,113 @@ use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum PrestoTy {
-    BIGINT,
-    INTEGER,
-    SMALLINT,
-    TINYINT,
-    BOOLEAN,
-    DATE,
-    DECIMAL,
-    REAL,
-    DOUBLE,
-    HYPER_LOG_LOG,
-    QDIGEST,
-    P4_HYPER_LOG_LOG,
-    INTERVAL_DAY_TO_SECOND,
-    INTERVAL_YEAR_TO_MONTH,
-    TIMESTAMP,
-    TIMESTAMP_WITH_TIME_ZONE,
-    TIME,
-    TIME_WITH_TIME_ZONE,
-    VARBINARY,
-    VARCHAR,
-    CHAR,
-    ROW,
-    ARRAY,
-    MAP,
-    JSON,
-    IPADDRESS,
-    UUID,
-    GEOMETRY,
-    BING_TILE,
+pub enum RawPrestoTy {
+    BigInt,
+    Integer,
+    SmallInt,
+    TinyInt,
+    Boolean,
+    Date,
+    Decimal,
+    Real,
+    Double,
+    HyperLogLog,
+    QDigest,
+    P4HyperLogLog,
+    IntervalDayToSecond,
+    IntervalYearToMonth,
+    Timestamp,
+    TimestampWithTimeZone,
+    Time,
+    TimeWithTimeZone,
+    VarBinary,
+    VarChar,
+    Char,
+    Row,
+    Array,
+    Map,
+    Json,
+    IpAddress,
+    Uuid,
+    Geometry,
+    BingTile,
 }
 
-impl PrestoTy {
+impl RawPrestoTy {
     pub fn to_str(&self) -> &'static str {
-        use PrestoTy::*;
+        use RawPrestoTy::*;
         match *self {
-            BIGINT => "bigint",
-            INTEGER => "integer",
-            SMALLINT => "smallint",
-            TINYINT => "tinyint",
-            BOOLEAN => "boolean",
-            DATE => "date",
-            DECIMAL => "decimal",
-            REAL => "real",
-            DOUBLE => "double",
-            HYPER_LOG_LOG => "HyperLogLog",
-            QDIGEST => "qdigest",
-            P4_HYPER_LOG_LOG => "P4HyperLogLog",
-            INTERVAL_DAY_TO_SECOND => "interval day to second",
-            INTERVAL_YEAR_TO_MONTH => "interval year to month",
-            TIMESTAMP => "timestamp",
-            TIMESTAMP_WITH_TIME_ZONE => "timestamp with time zone",
-            TIME => "time",
-            TIME_WITH_TIME_ZONE => "time with time zone",
-            VARBINARY => "varbinary",
-            VARCHAR => "varchar",
-            CHAR => "char",
-            ROW => "row",
-            ARRAY => "array",
-            MAP => "map",
-            JSON => "json",
-            IPADDRESS => "ipaddress",
-            UUID => "uuid",
-            GEOMETRY => "Geometry",
-            BING_TILE => "BingTile",
+            BigInt => "bigint",
+            Integer => "integer",
+            SmallInt => "smallint",
+            TinyInt => "tinyint",
+            Boolean => "boolean",
+            Date => "date",
+            Decimal => "decimal",
+            Real => "real",
+            Double => "double",
+            HyperLogLog => "HyperLogLog",
+            QDigest => "qdigest",
+            P4HyperLogLog => "P4HyperLogLog",
+            IntervalDayToSecond => "interval day to second",
+            IntervalYearToMonth => "interval year to month",
+            Timestamp => "timestamp",
+            TimestampWithTimeZone => "timestamp with time zone",
+            Time => "time",
+            TimeWithTimeZone => "time with time zone",
+            VarBinary => "varbinary",
+            VarChar => "varchar",
+            Char => "char",
+            Row => "row",
+            Array => "array",
+            Map => "map",
+            Json => "json",
+            IpAddress => "ipaddress",
+            Uuid => "uuid",
+            Geometry => "Geometry",
+            BingTile => "BingTile",
         }
     }
 
     pub fn parse(s: &str) -> Option<Self> {
-        use PrestoTy::*;
+        use RawPrestoTy::*;
         let ty = match s {
-            "bigint" => BIGINT,
-            "integer" => INTEGER,
-            "smallint" => SMALLINT,
-            "tinyint" => TINYINT,
-            "boolean" => BOOLEAN,
-            "date" => DATE,
-            "decimal" => DECIMAL,
-            "real" => REAL,
-            "double" => DOUBLE,
-            "HyperLogLog" => HYPER_LOG_LOG,
-            "qdigest" => QDIGEST,
-            "P4HyperLogLog" => P4_HYPER_LOG_LOG,
-            "interval day to second" => INTERVAL_DAY_TO_SECOND,
-            "interval year to month" => INTERVAL_YEAR_TO_MONTH,
-            "timestamp" => TIMESTAMP,
-            "timestamp with time zone" => TIMESTAMP_WITH_TIME_ZONE,
-            "time" => TIME,
-            "time with time zone" => TIME_WITH_TIME_ZONE,
-            "varbinary" => VARBINARY,
-            "varchar" => VARCHAR,
-            "char" => CHAR,
-            "row" => ROW,
-            "array" => ARRAY,
-            "map" => MAP,
-            "json" => JSON,
-            "ipaddress" => IPADDRESS,
-            "uuid" => UUID,
-            "Geometry" => GEOMETRY,
-            "BingTile" => BING_TILE,
+            "bigint" => BigInt,
+            "integer" => Integer,
+            "smallint" => SmallInt,
+            "tinyint" => TinyInt,
+            "boolean" => Boolean,
+            "date" => Date,
+            "decimal" => Decimal,
+            "real" => Real,
+            "double" => Double,
+            "HyperLogLog" => HyperLogLog,
+            "qdigest" => QDigest,
+            "P4HyperLogLog" => P4HyperLogLog,
+            "interval day to second" => IntervalDayToSecond,
+            "interval year to month" => IntervalYearToMonth,
+            "timestamp" => Timestamp,
+            "timestamp with time zone" => TimestampWithTimeZone,
+            "time" => Time,
+            "time with time zone" => TimeWithTimeZone,
+            "varbinary" => VarBinary,
+            "varchar" => VarChar,
+            "char" => Char,
+            "row" => Row,
+            "array" => Array,
+            "map" => Map,
+            "json" => Json,
+            "ipaddress" => IpAddress,
+            "uuid" => Uuid,
+            "Geometry" => Geometry,
+            "BingTile" => BingTile,
             _ => return None,
         };
         Some(ty)
     }
 }
 
-impl Serialize for PrestoTy {
+impl Serialize for RawPrestoTy {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -119,7 +119,7 @@ impl Serialize for PrestoTy {
     }
 }
 
-impl<'de> Deserialize<'de> for PrestoTy {
+impl<'de> Deserialize<'de> for RawPrestoTy {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -127,7 +127,7 @@ impl<'de> Deserialize<'de> for PrestoTy {
         struct TyVistor;
 
         impl<'de> Visitor<'de> for TyVistor {
-            type Value = PrestoTy;
+            type Value = RawPrestoTy;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("need str")
@@ -137,7 +137,7 @@ impl<'de> Deserialize<'de> for PrestoTy {
             where
                 E: de::Error,
             {
-                match PrestoTy::parse(v) {
+                match RawPrestoTy::parse(v) {
                     Some(d) => Ok(d),
                     None => Err(E::custom(format!("invalid presto type: {}", v))),
                 }
@@ -154,7 +154,7 @@ mod tests {
 
     #[test]
     fn test_ser() {
-        let ty = PrestoTy::CHAR;
+        let ty = RawPrestoTy::Char;
         let s = serde_json::to_string(&ty).unwrap();
         assert_eq!(s, "\"char\"");
     }
@@ -162,11 +162,11 @@ mod tests {
     #[test]
     fn test_de() {
         let data = "\"char\"";
-        let ty = serde_json::from_str::<PrestoTy>(data).unwrap();
-        assert_eq!(ty, PrestoTy::CHAR);
+        let ty = serde_json::from_str::<RawPrestoTy>(data).unwrap();
+        assert_eq!(ty, RawPrestoTy::Char);
 
         let invalid = "\"xxx\"";
-        let res = serde_json::from_str::<PrestoTy>(invalid);
+        let res = serde_json::from_str::<RawPrestoTy>(invalid);
         assert!(res.is_err());
     }
 }

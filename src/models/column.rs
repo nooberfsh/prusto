@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::PrestoTy;
+use super::RawPrestoTy;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -14,7 +14,7 @@ pub struct Column {
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TypeSignature {
-    pub raw_type: PrestoTy,
+    pub raw_type: RawPrestoTy,
     pub arguments: Vec<ClientTypeSignatureParameter>,
     #[serde(skip)]
     type_arguments: (), // deprecated
@@ -72,7 +72,7 @@ mod tests {
         assert_eq!(
             s,
             TypeSignature {
-                raw_type: PrestoTy::VARCHAR,
+                raw_type: RawPrestoTy::VarChar,
                 arguments: vec![ClientTypeSignatureParameter::LongLiteral(2147483647)],
                 type_arguments: (),
                 literal_arguments: (),
@@ -110,9 +110,9 @@ mod tests {
         assert_eq!(
             s,
             TypeSignature {
-                raw_type: PrestoTy::MAP,
+                raw_type: RawPrestoTy::Map,
                 arguments: vec![ClientTypeSignatureParameter::TypeSignature(TypeSignature {
-                    raw_type: PrestoTy::VARCHAR,
+                    raw_type: RawPrestoTy::VarChar,
                     arguments: vec![ClientTypeSignatureParameter::LongLiteral(3)],
                     type_arguments: (),
                     literal_arguments: (),
@@ -154,7 +154,7 @@ mod tests {
         assert_eq!(
             s,
             TypeSignature {
-                raw_type: PrestoTy::ROW,
+                raw_type: RawPrestoTy::Row,
                 arguments: vec![ClientTypeSignatureParameter::NamedTypeSignature(
                     NamedTypeSignature {
                         field_name: Some(RowFieldName {
@@ -162,7 +162,7 @@ mod tests {
                             delimited: (),
                         }),
                         type_signature: TypeSignature {
-                            raw_type: PrestoTy::DOUBLE,
+                            raw_type: RawPrestoTy::Double,
                             arguments: vec![],
                             type_arguments: (),
                             literal_arguments: (),

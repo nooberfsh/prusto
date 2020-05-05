@@ -1,7 +1,5 @@
 #![feature(generic_associated_types)]
 
-pub mod client;
-mod constants;
 pub mod error;
 mod models;
 pub mod types;
