@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use serde::ser::{self, Serialize, SerializeStruct, Serializer, SerializeSeq};
+use serde::ser::{self, Serialize, SerializeSeq, SerializeStruct, Serializer};
 
 use crate::models;
-
-pub struct Error;
 
 pub trait Presto {
     type ValueType<'a>: Serialize;
@@ -72,10 +70,15 @@ impl Presto for String {
 }
 
 impl<T: Presto> Presto for Vec<T> {
-    type ValueType<'a> = Vec<T::ValueType<'a>>;
+    type ValueType<'a> = impl Serialize;
 
     fn value(&self) -> Self::ValueType<'_> {
-        self.iter().map(|t| t.value()).collect()
+        let iter = self.iter().map(|t| t.value());
+
+        SerializeIterator {
+            iter,
+            size: Some(self.len()),
+        }
     }
 
     fn ty() -> PrestoTy {
@@ -84,12 +87,15 @@ impl<T: Presto> Presto for Vec<T> {
 }
 
 impl<K: Presto + Eq + Hash, V: Presto> Presto for HashMap<K, V> {
-    type ValueType<'a> = Vec<(K::ValueType<'a>, V::ValueType<'a>)>;
+    type ValueType<'a> = impl Serialize;
 
     fn value(&self) -> Self::ValueType<'_> {
-        self.iter()
-            .map(|(k, v)| (k.value(), v.value()))
-            .collect()
+        let iter = self.iter().map(|(k, v)| (k.value(), v.value()));
+
+        SerializeIterator {
+            iter,
+            size: Some(self.len()),
+        }
     }
 
     fn ty() -> PrestoTy {
@@ -100,7 +106,6 @@ impl<K: Presto + Eq + Hash, V: Presto> Presto for HashMap<K, V> {
 pub struct DataSet<T: Presto> {
     data: Vec<T>,
 }
-
 
 impl<T: Presto> Serialize for DataSet<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -129,7 +134,7 @@ impl<T: Presto> Serialize for DataSet<T> {
             }
         };
         let data = SerializeIterator {
-          iter: self.data.iter().map(|d| d.value())  ,
+            iter: self.data.iter().map(|d| d.value()),
             size: Some(self.data.len()),
         };
         state.serialize_field("columns", &columns)?;
@@ -148,10 +153,13 @@ struct SerializeIterator<T: Serialize, I: Iterator<Item = T> + Clone> {
 }
 
 impl<T, I> Serialize for SerializeIterator<T, I>
-    where I: Iterator<Item = T> + Clone, T: Serialize {
+where
+    I: Iterator<Item = T> + Clone,
+    T: Serialize,
+{
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         let mut s = serializer.serialize_seq(self.size)?;
         for e in self.iter.clone() {
