@@ -1,9 +1,9 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::borrow::Cow;
 
-use serde::ser::{self, Serialize, SerializeSeq, SerializeStruct, Serializer};
 use itertools::Itertools;
+use serde::ser::{self, Serialize, SerializeMap, SerializeSeq, SerializeStruct, Serializer};
 
 use crate::{
     models, ClientTypeSignatureParameter, NamedTypeSignature, RowFieldName, TypeSignature,
@@ -159,7 +159,7 @@ impl<K: Presto + Eq + Hash, V: Presto> Presto for HashMap<K, V> {
     fn value(&self) -> Self::ValueType<'_> {
         let iter = self.iter().map(|(k, v)| (k.value(), v.value()));
 
-        SerializeIterator {
+        SerializePairIterator {
             iter,
             size: Some(self.len()),
         }
@@ -231,6 +231,29 @@ where
         let mut s = serializer.serialize_seq(self.size)?;
         for e in self.iter.clone() {
             s.serialize_element(&e)?;
+        }
+        s.end()
+    }
+}
+
+struct SerializePairIterator<K: Serialize, V: Serialize, I: Iterator<Item = (K, V)> + Clone> {
+    iter: I,
+    size: Option<usize>,
+}
+
+impl<K, V, I> Serialize for SerializePairIterator<K, V, I>
+where
+    K: Serialize,
+    V: Serialize,
+    I: Iterator<Item = (K, V)> + Clone,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_map(self.size)?;
+        for (k, v) in self.iter.clone() {
+            s.serialize_entry(&k, &v)?;
         }
         s.end()
     }
