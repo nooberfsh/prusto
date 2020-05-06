@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::borrow::Cow;
 
 use serde::ser::{self, Serialize, SerializeSeq, SerializeStruct, Serializer};
+use itertools::Itertools;
 
 use crate::{
     models, ClientTypeSignatureParameter, NamedTypeSignature, RowFieldName, TypeSignature,
@@ -64,8 +66,37 @@ impl PrestoTy {
         TypeSignature::new(raw_ty, params)
     }
 
-    pub fn full_type(&self) -> String {
-        todo!()
+    pub fn full_type(&self) -> Cow<'static, str> {
+        use PrestoTy::*;
+
+        match self {
+            Integer => models::RawPrestoTy::Integer.to_str().into(),
+            Varchar => models::RawPrestoTy::VarChar.to_str().into(),
+            Tuple(ts) => format!(
+                "{}({})",
+                models::RawPrestoTy::Row.to_str(),
+                ts.iter().map(|ty| ty.full_type()).join(",")
+            )
+            .into(),
+            Row(ts) => format!(
+                "{}({})",
+                models::RawPrestoTy::Row.to_str(),
+                ts.iter()
+                    .map(|(name, ty)| format!("{} {}", name, ty.full_type()))
+                    .join(",")
+            )
+            .into(),
+            Array(t) => {
+                format!("{}({})", models::RawPrestoTy::Array.to_str(), t.full_type()).into()
+            }
+            Map(t1, t2) => format!(
+                "{}({},{})",
+                models::RawPrestoTy::Map.to_str(),
+                t1.full_type(),
+                t2.full_type()
+            )
+            .into(),
+        }
     }
 
     pub fn raw_type(&self) -> models::RawPrestoTy {
@@ -157,8 +188,8 @@ impl<T: Presto> Serialize for DataSet<T> {
                 for (name, ty) in r {
                     let column = models::Column {
                         name,
-                        ty: ty.full_type(),
-                        type_signature: Some(ty.type_signature()),
+                        ty: ty.full_type().into_owned(),
+                        type_signature: Some(ty.into_type_signature()),
                     };
                     ret.push(column);
                 }
