@@ -16,6 +16,8 @@ pub trait Presto {
     fn ty() -> PrestoTy;
 }
 
+pub trait PrestoMapKey: Presto {}
+
 // TODO: can avoid alloc? use something like &'static PresotTy
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PrestoTy {
@@ -124,6 +126,7 @@ impl Presto for i32 {
         PrestoTy::Integer
     }
 }
+impl PrestoMapKey for i32 {}
 
 impl Presto for String {
     type ValueType<'a> = &'a String;
@@ -135,6 +138,7 @@ impl Presto for String {
         PrestoTy::Varchar
     }
 }
+impl PrestoMapKey for String {}
 
 impl<T: Presto> Presto for Vec<T> {
     type ValueType<'a> = impl Serialize;
@@ -153,7 +157,7 @@ impl<T: Presto> Presto for Vec<T> {
     }
 }
 
-impl<K: Presto + Eq + Hash, V: Presto> Presto for HashMap<K, V> {
+impl<K: PrestoMapKey + Eq + Hash, V: Presto> Presto for HashMap<K, V> {
     type ValueType<'a> = impl Serialize;
 
     fn value(&self) -> Self::ValueType<'_> {
