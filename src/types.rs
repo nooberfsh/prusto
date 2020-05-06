@@ -3,7 +3,9 @@ use std::hash::Hash;
 
 use serde::ser::{self, Serialize, SerializeSeq, SerializeStruct, Serializer};
 
-use crate::models;
+use crate::{
+    models, ClientTypeSignatureParameter, NamedTypeSignature, RowFieldName, TypeSignature,
+};
 
 pub trait Presto {
     type ValueType<'a>: Serialize;
@@ -24,8 +26,42 @@ pub enum PrestoTy {
 }
 
 impl PrestoTy {
-    pub fn type_signature(&self) -> models::TypeSignature {
-        todo!()
+    pub fn into_type_signature(self) -> models::TypeSignature {
+        use PrestoTy::*;
+
+        let raw_ty = self.raw_type();
+
+        let params = match self {
+            Integer => vec![],
+            Varchar => vec![ClientTypeSignatureParameter::LongLiteral(2147483647)],
+            Tuple(ts) => ts
+                .into_iter()
+                .map(|ty| {
+                    ClientTypeSignatureParameter::NamedTypeSignature(NamedTypeSignature {
+                        field_name: None,
+                        type_signature: ty.into_type_signature(),
+                    })
+                })
+                .collect(),
+            Row(ts) => ts
+                .into_iter()
+                .map(|(name, ty)| {
+                    ClientTypeSignatureParameter::NamedTypeSignature(NamedTypeSignature {
+                        field_name: Some(RowFieldName::new(name)),
+                        type_signature: ty.into_type_signature(),
+                    })
+                })
+                .collect(),
+            Array(t) => vec![ClientTypeSignatureParameter::TypeSignature(
+                t.into_type_signature(),
+            )],
+            Map(t1, t2) => vec![
+                ClientTypeSignatureParameter::TypeSignature(t1.into_type_signature()),
+                ClientTypeSignatureParameter::TypeSignature(t2.into_type_signature()),
+            ],
+        };
+
+        TypeSignature::new(raw_ty, params)
     }
 
     pub fn full_type(&self) -> String {

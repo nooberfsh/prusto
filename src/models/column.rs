@@ -25,8 +25,8 @@ pub struct TypeSignature {
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct NamedTypeSignature {
-    field_name: Option<RowFieldName>,
-    type_signature: TypeSignature,
+    pub field_name: Option<RowFieldName>,
+    pub type_signature: TypeSignature,
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -46,6 +46,26 @@ pub enum ClientTypeSignatureParameter {
     NamedTypeSignature(NamedTypeSignature),
     #[serde(rename = "LONG_LITERAL")]
     LongLiteral(u64),
+}
+
+impl TypeSignature {
+    pub fn new(raw_type: RawPrestoTy, arguments: Vec<ClientTypeSignatureParameter>) -> Self {
+        TypeSignature {
+            raw_type,
+            arguments,
+            type_arguments: (),
+            literal_arguments: (),
+        }
+    }
+}
+
+impl RowFieldName {
+    pub fn new(name: String) -> Self {
+        RowFieldName {
+            name,
+            delimited: (),
+        }
+    }
 }
 
 #[cfg(test)]
