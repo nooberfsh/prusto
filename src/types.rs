@@ -1,12 +1,17 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fmt;
 use std::hash::Hash;
+use std::marker::PhantomData;
 
+use derive_more::Display;
 use itertools::Itertools;
-use serde::ser::{self, Serialize, SerializeMap, SerializeSeq, SerializeStruct, Serializer};
+use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, Visitor};
+use serde::ser::{self, SerializeMap, SerializeSeq, SerializeStruct, Serializer};
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    models, ClientTypeSignatureParameter, NamedTypeSignature, RowFieldName, TypeSignature,
+    models, ClientTypeSignatureParameter, Column, NamedTypeSignature, RowFieldName, TypeSignature,
 };
 
 pub trait Presto {
@@ -18,7 +23,6 @@ pub trait Presto {
 
 pub trait PrestoMapKey: Presto {}
 
-// TODO: can avoid alloc? use something like &'static PresotTy
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PrestoTy {
     Integer,
@@ -29,7 +33,28 @@ pub enum PrestoTy {
     Map(Box<PrestoTy>, Box<PrestoTy>),
 }
 
+#[derive(Display)]
+pub struct FromSigError;
+
 impl PrestoTy {
+    pub fn from_type_signature(sig: TypeSignature) -> Result<Self, FromSigError> {
+        todo!()
+    }
+
+    pub fn from_columns(columns: Vec<Column>) -> Result<Self, FromSigError> {
+        let mut ret = Vec::with_capacity(columns.len());
+        for column in columns {
+            if let Some(sig) = column.type_signature {
+                let ty = Self::from_type_signature(sig)?;
+                ret.push((column.name, ty));
+            } else {
+                return Err(FromSigError);
+            }
+        }
+
+        Ok(PrestoTy::Row(ret))
+    }
+
     pub fn into_type_signature(self) -> models::TypeSignature {
         use PrestoTy::*;
 
@@ -209,6 +234,7 @@ impl<T: Presto> Serialize for DataSet<T> {
                     };
                     ret.push(column);
                 }
+                ret
             }
             _ => {
                 return Err(ser::Error::custom(format!(
@@ -225,6 +251,85 @@ impl<T: Presto> Serialize for DataSet<T> {
         state.end()
     }
 }
+
+impl<'de, T: Presto> Deserialize<'de> for DataSet<T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field {
+            Columns,
+            Data,
+        }
+
+        struct DataSetVisitor<T: Presto>(PhantomData<T>);
+
+        impl<'de, T: Presto> Visitor<'de> for DataSetVisitor<T> {
+            type Value = DataSet<T>;
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct DataSet")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<DataSet<T>, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let ty = if let Some(Field::Columns) = map.next_key()? {
+                    let columns: Vec<Column> = map.next_value()?;
+                    PrestoTy::from_columns(columns).map_err(|e| {
+                        de::Error::custom(format!("deserialize presto type failed, reason: {}", e))
+                    })?
+                } else {
+                    return Err(de::Error::missing_field("columns"));
+                };
+
+                if ty != T::ty() {
+                    return Err(de::Error::custom(format!("presto type does not match")));
+                }
+
+                let data = if let Some(Field::Data) = map.next_key()? {
+                    let seed = WrapData {
+                        ty: &ty,
+                        _marker: PhantomData,
+                    };
+                    map.next_value_seed(seed)?
+                } else {
+                    return Err(de::Error::missing_field("data"));
+                };
+
+                match map.next_key::<Field>()? {
+                    Some(Field::Columns) => return Err(de::Error::duplicate_field("columns")),
+                    Some(Field::Data) => return Err(de::Error::duplicate_field("data")),
+                    None => {}
+                }
+
+                Ok(DataSet { data })
+            }
+        }
+
+        const FIELDS: &'static [&'static str] = &["columns", "data"];
+        deserializer.deserialize_struct("DataSet", FIELDS, DataSetVisitor(PhantomData))
+    }
+}
+
+struct WrapData<'a, T: Presto> {
+    ty: &'a PrestoTy,
+    _marker: PhantomData<Vec<T>>,
+}
+
+impl<'a, 'de, T: Presto> DeserializeSeed<'de> for WrapData<'a, T> {
+    type Value = Vec<T>;
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        todo!()
+    }
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 
