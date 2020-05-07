@@ -31,10 +31,10 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
     let (impl_generics, ty_generics, where_clause) = data.generics.split_for_impl();
     let gen = quote! {
         impl #impl_generics ::presto::types::Presto for #name #ty_generics #where_clause {
-            type ValueType<'a> = ( #(&'a #types),* );
+            type ValueType<'a> = ( #(<#types as ::presto::types::Presto>::ValueType<'a>),* );
 
             fn value(&self) -> Self::ValueType<'_>  {
-                ( #(& self.#keys),* )
+                ( #(self.#keys.value()),* )
             }
 
             fn ty() -> ::presto::types::PrestoTy {
