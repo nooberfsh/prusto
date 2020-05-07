@@ -140,6 +140,18 @@ impl Presto for String {
 }
 impl PrestoMapKey for String {}
 
+impl<'b> Presto for &'b str {
+    type ValueType<'a> = &'a str;
+
+    fn value(&self) -> Self::ValueType<'_> {
+        *self
+    }
+    fn ty() -> PrestoTy {
+        PrestoTy::Varchar
+    }
+}
+impl<'b> PrestoMapKey for &'b str {}
+
 impl<T: Presto> Presto for Vec<T> {
     type ValueType<'a> = impl Serialize;
 
