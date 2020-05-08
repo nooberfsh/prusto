@@ -44,7 +44,7 @@ pub trait Presto {
 
 pub trait PrestoMapKey: Presto {}
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum PrestoTy {
     Integer,
     Varchar,
@@ -55,6 +55,38 @@ pub enum PrestoTy {
 }
 
 impl PrestoTy {
+    pub fn is_match(&self, other: &PrestoTy) -> bool {
+        use PrestoTy::*;
+
+        match (self, other) {
+            (Integer, Integer) => true,
+            (Varchar, Varchar) => true,
+            (Tuple(t1), Tuple(t2)) => {
+                if t1.len() != t2.len() {
+                    false
+                } else {
+                    t1.iter().zip(t2.iter()).all(|(l, r)| l.is_match(r))
+                }
+            }
+            (Row(t1), Row(t2)) => {
+                if t1.len() != t2.len() {
+                    false
+                } else {
+                    let mut t1k: Vec<_> = t1.clone();
+                    t1k.sort_by(|t1, t2| t1.0.cmp(&t2.0));
+                    let mut t2k: Vec<_> = t2.clone();
+                    t2k.sort_by(|t1, t2| t1.0.cmp(&t2.0));
+
+                    t1k.iter()
+                        .zip(t2k.iter())
+                        .all(|(l, r)| l.0 == r.0 && l.1.is_match(&r.1))
+                }
+            }
+            (Map(t1k, t1v), Map(t2k, t2v)) => t1k.is_match(t2k) && t1v.is_match(t2v),
+            _ => false,
+        }
+    }
+
     pub fn from_type_signature(mut sig: TypeSignature) -> Result<Self, Error> {
         let ty = match sig.raw_type {
             RawPrestoTy::Integer => PrestoTy::Integer,

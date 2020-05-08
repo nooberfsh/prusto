@@ -83,7 +83,7 @@ impl<'de, T: Presto> Deserialize<'de> for DataSet<T> {
                     return Err(de::Error::missing_field("columns"));
                 };
 
-                if ty != T::ty() {
+                if ty.is_match(&T::ty()) {
                     return Err(de::Error::custom(format!("presto type does not match")));
                 }
 
