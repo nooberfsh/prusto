@@ -33,7 +33,7 @@ impl<T: Presto> Presto for Vec<T> {
     }
 }
 
-pub struct VecSeed<'a, T>(pub &'a PrestoTy, pub PhantomData<T>);
+pub struct VecSeed<'a, T>(pub(super) &'a PrestoTy, pub(super) PhantomData<T>);
 
 impl<'a, 'de, T: Presto> Visitor<'de> for VecSeed<'a, T> {
     type Value = Vec<T>;
