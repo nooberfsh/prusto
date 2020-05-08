@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 
 use derive_more::Display;
 use itertools::Itertools;
-use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, Visitor};
+use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
 use serde::ser::{self, SerializeMap, SerializeSeq, SerializeStruct, Serializer};
 use serde::{Deserialize, Serialize};
 
@@ -14,11 +14,21 @@ use crate::{
     models, ClientTypeSignatureParameter, Column, NamedTypeSignature, RowFieldName, TypeSignature,
 };
 
+//TODO: refine it
+#[derive(Display)]
+pub enum Error {
+    InvalidPrestoType,
+    InvalidColumn,
+    InvalidTypeSignature,
+}
+
 pub trait Presto {
     type ValueType<'a>: Serialize;
+    type Seed<'a, 'de>: DeserializeSeed<'de, Value = Self>;
 
     fn value(&self) -> Self::ValueType<'_>;
     fn ty() -> PrestoTy;
+    fn seed<'a, 'de>(ty: &'a PrestoTy) -> Result<Self::Seed<'a, 'de>, Error>;
 }
 
 pub trait PrestoMapKey: Presto {}
@@ -33,22 +43,86 @@ pub enum PrestoTy {
     Map(Box<PrestoTy>, Box<PrestoTy>),
 }
 
-#[derive(Display)]
-pub struct FromSigError;
-
 impl PrestoTy {
-    pub fn from_type_signature(sig: TypeSignature) -> Result<Self, FromSigError> {
-        todo!()
+    pub fn from_type_signature(mut sig: TypeSignature) -> Result<Self, Error> {
+        let ty = match sig.raw_type {
+            models::RawPrestoTy::Integer => PrestoTy::Integer,
+            models::RawPrestoTy::VarChar => PrestoTy::Varchar,
+            models::RawPrestoTy::Array if sig.arguments.len() == 1 => {
+                let sig = sig.arguments.pop().unwrap();
+                if let ClientTypeSignatureParameter::TypeSignature(sig) = sig {
+                    let inner = Self::from_type_signature(sig)?;
+                    PrestoTy::Array(Box::new(inner))
+                } else {
+                    return Err(Error::InvalidTypeSignature);
+                }
+            }
+            models::RawPrestoTy::Map if sig.arguments.len() == 2 => {
+                let v_sig = sig.arguments.pop().unwrap();
+                let k_sig = sig.arguments.pop().unwrap();
+                if let (
+                    ClientTypeSignatureParameter::TypeSignature(k_sig),
+                    ClientTypeSignatureParameter::TypeSignature(v_sig),
+                ) = (k_sig, v_sig)
+                {
+                    let k_inner = Self::from_type_signature(k_sig)?;
+                    let v_inner = Self::from_type_signature(v_sig)?;
+                    PrestoTy::Map(Box::new(k_inner), Box::new(v_inner))
+                } else {
+                    return Err(Error::InvalidTypeSignature);
+                }
+            }
+            models::RawPrestoTy::Row if !sig.arguments.is_empty() => {
+                let mut ir = Vec::with_capacity(sig.arguments.len());
+                for arg in sig.arguments {
+                    match arg {
+                        ClientTypeSignatureParameter::NamedTypeSignature(sig) => {
+                            let name = sig.field_name.map(|n| n.name);
+                            let ty = Self::from_type_signature(sig.type_signature)?;
+                            ir.push((name, ty));
+                        }
+                        _ => return Err(Error::InvalidTypeSignature),
+                    }
+                }
+
+                let is_named = ir[0].0.is_some();
+
+                if is_named {
+                    let mut ret = Vec::with_capacity(ir.len());
+                    for (name, ty) in ir {
+                        if let Some(n) = name {
+                            ret.push((n, ty))
+                        } else {
+                            return Err(Error::InvalidTypeSignature);
+                        }
+                    }
+                    PrestoTy::Row(ret)
+                } else {
+                    let mut ret = Vec::with_capacity(ir.len());
+                    for (name, ty) in ir {
+                        if let Some(_) = name {
+                            return Err(Error::InvalidTypeSignature);
+                        } else {
+                            ret.push(ty)
+                        }
+                    }
+                    PrestoTy::Tuple(ret)
+                }
+            }
+            _ => return Err(Error::InvalidTypeSignature),
+        };
+
+        Ok(ty)
     }
 
-    pub fn from_columns(columns: Vec<Column>) -> Result<Self, FromSigError> {
+    pub fn from_columns(columns: Vec<Column>) -> Result<Self, Error> {
         let mut ret = Vec::with_capacity(columns.len());
         for column in columns {
             if let Some(sig) = column.type_signature {
                 let ty = Self::from_type_signature(sig)?;
                 ret.push((column.name, ty));
             } else {
-                return Err(FromSigError);
+                return Err(Error::InvalidColumn);
             }
         }
 
@@ -142,6 +216,7 @@ impl PrestoTy {
 
 impl Presto for i32 {
     type ValueType<'a> = &'a i32;
+    type Seed<'a, 'de> = I32Seed;
 
     fn value(&self) -> Self::ValueType<'_> {
         self
@@ -150,11 +225,39 @@ impl Presto for i32 {
     fn ty() -> PrestoTy {
         PrestoTy::Integer
     }
+
+    fn seed<'a, 'de>(_ty: &'a PrestoTy) -> Result<Self::Seed<'a, 'de>, Error> {
+        Ok(I32Seed)
+    }
 }
 impl PrestoMapKey for i32 {}
+pub struct I32Seed;
+impl<'de> Visitor<'de> for I32Seed {
+    type Value = i32;
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("i32 seed")
+    }
+
+    fn visit_i32<E>(self, value: i32) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(value)
+    }
+}
+impl<'de> DeserializeSeed<'de> for I32Seed {
+    type Value = i32;
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_i32(self)
+    }
+}
 
 impl Presto for String {
     type ValueType<'a> = &'a String;
+    type Seed<'a, 'de> = StringSeed;
 
     fn value(&self) -> Self::ValueType<'_> {
         self
@@ -162,11 +265,37 @@ impl Presto for String {
     fn ty() -> PrestoTy {
         PrestoTy::Varchar
     }
+    fn seed<'a, 'de>(_ty: &'a PrestoTy) -> Result<Self::Seed<'a, 'de>, Error> {
+        Ok(StringSeed)
+    }
 }
 impl PrestoMapKey for String {}
+pub struct StringSeed;
+impl<'de> Visitor<'de> for StringSeed {
+    type Value = String;
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("string seed")
+    }
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(v)
+    }
+}
+impl<'de> DeserializeSeed<'de> for StringSeed {
+    type Value = String;
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_string(self)
+    }
+}
 
 impl<'b> Presto for &'b str {
     type ValueType<'a> = &'a str;
+    type Seed<'a, 'de> = StrSeed;
 
     fn value(&self) -> Self::ValueType<'_> {
         *self
@@ -174,11 +303,38 @@ impl<'b> Presto for &'b str {
     fn ty() -> PrestoTy {
         PrestoTy::Varchar
     }
+
+    fn seed<'a, 'de>(_ty: &'a PrestoTy) -> Result<Self::Seed<'a, 'de>, Error> {
+        Ok(StrSeed)
+    }
 }
 impl<'b> PrestoMapKey for &'b str {}
+pub struct StrSeed;
+impl<'de> Visitor<'de> for StrSeed {
+    type Value = &'de str;
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("&str seed")
+    }
+    fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(v)
+    }
+}
+impl<'de> DeserializeSeed<'de> for StrSeed {
+    type Value = &'de str;
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(self)
+    }
+}
 
 impl<T: Presto> Presto for Vec<T> {
     type ValueType<'a> = impl Serialize;
+    type Seed<'a, 'de> = VecSeed<'a, T>;
 
     fn value(&self) -> Self::ValueType<'_> {
         let iter = self.iter().map(|t| t.value());
@@ -192,10 +348,47 @@ impl<T: Presto> Presto for Vec<T> {
     fn ty() -> PrestoTy {
         PrestoTy::Array(Box::new(T::ty()))
     }
+
+    fn seed<'a, 'de>(ty: &'a PrestoTy) -> Result<Self::Seed<'a, 'de>, Error> {
+        if let PrestoTy::Array(ty) = ty {
+            Ok(VecSeed(ty, PhantomData))
+        } else {
+            Err(Error::InvalidPrestoType)
+        }
+    }
+}
+pub struct VecSeed<'a, T>(&'a PrestoTy, PhantomData<T>);
+impl<'a, 'de, T: Presto> Visitor<'de> for VecSeed<'a, T> {
+    type Value = Vec<T>;
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("vec seed")
+    }
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        let mut ret = vec![];
+        while let Some(d) = seq.next_element_seed(
+            T::seed(self.0).map_err(|e| <A::Error as de::Error>::custom(format!("{}", e)))?,
+        )? {
+            ret.push(d)
+        }
+        Ok(ret)
+    }
+}
+impl<'a, 'de, T: Presto> DeserializeSeed<'de> for VecSeed<'a, T> {
+    type Value = Vec<T>;
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_seq(self)
+    }
 }
 
 impl<K: PrestoMapKey + Eq + Hash, V: Presto> Presto for HashMap<K, V> {
     type ValueType<'a> = impl Serialize;
+    type Seed<'a, 'de> = MapSeed<'a, K, V>;
 
     fn value(&self) -> Self::ValueType<'_> {
         let iter = self.iter().map(|(k, v)| (k.value(), v.value()));
@@ -208,6 +401,44 @@ impl<K: PrestoMapKey + Eq + Hash, V: Presto> Presto for HashMap<K, V> {
 
     fn ty() -> PrestoTy {
         PrestoTy::Map(Box::new(K::ty()), Box::new(V::ty()))
+    }
+
+    fn seed<'a, 'de>(ty: &'a PrestoTy) -> Result<Self::Seed<'a, 'de>, Error> {
+        if let PrestoTy::Map(t1, t2) = ty {
+            Ok(MapSeed(t1, t2, PhantomData))
+        } else {
+            Err(Error::InvalidPrestoType)
+        }
+    }
+}
+
+pub struct MapSeed<'a, K, V>(&'a PrestoTy, &'a PrestoTy, PhantomData<(K, V)>);
+impl<'a, 'de, K: PrestoMapKey + Eq + Hash, V: Presto> Visitor<'de> for MapSeed<'a, K, V> {
+    type Value = HashMap<K, V>;
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("hash map seed")
+    }
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    where
+        A: MapAccess<'de>,
+    {
+        let mut ret = HashMap::new();
+        while let Some((k, v)) = map.next_entry_seed(
+            K::seed(self.0).map_err(|e| <A::Error as de::Error>::custom(format!("{}", e)))?,
+            V::seed(self.1).map_err(|e| <A::Error as de::Error>::custom(format!("{}", e)))?,
+        )? {
+            ret.insert(k, v);
+        }
+        Ok(ret)
+    }
+}
+impl<'a, 'de, K: PrestoMapKey + Eq + Hash, V: Presto> DeserializeSeed<'de> for MapSeed<'a, K, V> {
+    type Value = HashMap<K, V>;
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_map(self)
     }
 }
 
@@ -289,11 +520,10 @@ impl<'de, T: Presto> Deserialize<'de> for DataSet<T> {
                     return Err(de::Error::custom(format!("presto type does not match")));
                 }
 
+                let ty = PrestoTy::Array(Box::new(ty));
+
                 let data = if let Some(Field::Data) = map.next_key()? {
-                    let seed = WrapData {
-                        ty: &ty,
-                        _marker: PhantomData,
-                    };
+                    let seed = VecSeed(&ty, PhantomData);
                     map.next_value_seed(seed)?
                 } else {
                     return Err(de::Error::missing_field("data"));
@@ -313,23 +543,6 @@ impl<'de, T: Presto> Deserialize<'de> for DataSet<T> {
         deserializer.deserialize_struct("DataSet", FIELDS, DataSetVisitor(PhantomData))
     }
 }
-
-struct WrapData<'a, T: Presto> {
-    ty: &'a PrestoTy,
-    _marker: PhantomData<Vec<T>>,
-}
-
-impl<'a, 'de, T: Presto> DeserializeSeed<'de> for WrapData<'a, T> {
-    type Value = Vec<T>;
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        todo!()
-    }
-}
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////
 
