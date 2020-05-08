@@ -36,6 +36,7 @@ impl<K: PrestoMapKey + Eq + Hash, V: Presto> Presto for HashMap<K, V> {
 }
 
 pub struct MapSeed<'a, K, V>(&'a PrestoTy, &'a PrestoTy, PhantomData<(K, V)>);
+
 impl<'a, 'de, K: PrestoMapKey + Eq + Hash, V: Presto> Visitor<'de> for MapSeed<'a, K, V> {
     type Value = HashMap<K, V>;
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -55,6 +56,7 @@ impl<'a, 'de, K: PrestoMapKey + Eq + Hash, V: Presto> Visitor<'de> for MapSeed<'
         Ok(ret)
     }
 }
+
 impl<'a, 'de, K: PrestoMapKey + Eq + Hash, V: Presto> DeserializeSeed<'de> for MapSeed<'a, K, V> {
     type Value = HashMap<K, V>;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>

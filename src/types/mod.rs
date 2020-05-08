@@ -5,6 +5,7 @@ mod str;
 mod string;
 pub(self) mod util;
 mod vec;
+
 pub use self::str::*;
 pub use map::*;
 pub use number::*;

@@ -38,6 +38,7 @@ impl<'de> Visitor<'de> for I32Seed {
         Ok(value)
     }
 }
+
 impl<'de> DeserializeSeed<'de> for I32Seed {
     type Value = i32;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>

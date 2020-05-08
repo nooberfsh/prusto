@@ -19,8 +19,11 @@ impl<'b> Presto for &'b str {
         Ok(StrSeed)
     }
 }
+
 impl<'b> PrestoMapKey for &'b str {}
+
 pub struct StrSeed;
+
 impl<'de> Visitor<'de> for StrSeed {
     type Value = &'de str;
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -33,6 +36,7 @@ impl<'de> Visitor<'de> for StrSeed {
         Ok(v)
     }
 }
+
 impl<'de> DeserializeSeed<'de> for StrSeed {
     type Value = &'de str;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
