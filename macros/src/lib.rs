@@ -28,19 +28,22 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
         .clone()
         .map(|ident| LitStr::new(&format!("{}", ident), ident.span()));
     let types = fields.iter().map(|f| &f.ty);
+
+    let keys2 = keys.clone();
     let types2 = types.clone();
+    let types3 = types.clone();
 
     let (impl_generics, ty_generics, where_clause) = data.generics.split_for_impl();
 
     let mut seed_generics = data.generics.clone();
     seed_generics.params.push(parse_quote!('_a));
-    let (_, seed_ty_generics, seed_where_clause) = seed_generics.split_for_impl();
+    let (_, seed_ty_generics, _) = seed_generics.split_for_impl();
 
     let mut seed_de_generics = seed_generics.clone();
     seed_de_generics.params.push(parse_quote!('_de));
     let (seed_de_impl_generics, _, _) = seed_de_generics.split_for_impl();
 
-    let gen = quote! {
+    let impl_trait_block = quote! {
 
         impl #impl_generics ::presto::types::Presto for #name #ty_generics #where_clause {
             type ValueType<'_a> = ( #(<#types as ::presto::types::Presto>::ValueType<'_a>),* );
@@ -55,19 +58,32 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
                 ::presto::types::PrestoTy::Row(types)
             }
 
-            fn seed<'_a, '_de>(ty: &'_a ::presto::types::PrestoTy) -> ::std::result::Result<Self::Seed<'_a, '_de>, ::presto::types::Error> {
-                if let ::presto::types::PrestoTy::Row(tyes)  = ty {
-                    //TODO: add more checks
-                    Ok(#seed_name(&*tyes, ::std::marker::PhantomData))
+            fn seed<'_a, '_de>(ctx: &'_a ::presto::types::Context<'_a>) -> Self::Seed<'_a, '_de> {
+                if let ::presto::types::PrestoTy::Row(types)  = ctx.ty() {
+                    #seed_name {
+                        ctx,
+                        types,
+                        _marker: ::std::marker::PhantomData,
+                    }
                 } else {
-                    Err(::presto::types::Error::InvalidPrestoType)
+                    unreachable!()
+                }
+            }
+
+            fn empty() -> Self {
+                Self {
+                    #( #keys2:  <#types3 as ::presto::types::Presto>::empty(),)*
                 }
             }
         }
 
-        #vis struct #seed_name #seed_ty_generics (&'_a [(::std::string::String,::presto::types::PrestoTy)], ::std::marker::PhantomData<#name #ty_generics>) #seed_where_clause ;
+        #vis struct #seed_name #seed_ty_generics #where_clause {
+            ctx: &'_a ::presto::types::Context<'_a>,
+            types: &'_a [(::std::string::String,::presto::types::PrestoTy)],
+            _marker: ::std::marker::PhantomData<#name #ty_generics>,
+        }
 
-        impl #seed_de_impl_generics ::serde::de::DeserializeSeed<'_de> for #seed_name #seed_ty_generics #seed_where_clause {
+        impl #seed_de_impl_generics ::serde::de::DeserializeSeed<'_de> for #seed_name #seed_ty_generics #where_clause {
             type Value = #name #ty_generics;
 
             fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
@@ -78,14 +94,70 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
             }
         }
 
-        impl #seed_de_impl_generics ::serde::de::Visitor<'_de> for #seed_name #seed_ty_generics #seed_where_clause {
+        impl #seed_de_impl_generics ::serde::de::Visitor<'_de> for #seed_name #seed_ty_generics #where_clause {
             type Value = #name #ty_generics;
 
             fn expecting(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                formatter.write_str(" todo")
+                formatter.write_str("todo")
+            }
+
+            fn visit_seq<A: ::serde::de::SeqAccess<'_de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+                let mut ret = Self::Value::empty();
+
+                let row_map = self.ctx.row_map().expect("invalid context");
+                for idx in row_map {
+                    let ty = &self.types[*idx].1;
+                    let ctx = self.ctx.with_ty(&ty);
+                    ret.__access_seq(*idx, &mut seq, &ctx)?;
+                }
+
+                if let Ok(None) = seq.next_element::<String>() {
+                    Err(<A::Error as ::serde::de::Error>::custom("access seq failed, there are some extra data"))
+                } else {
+                    Ok(ret)
+                }
             }
         }
     };
 
-    Ok(gen)
+    let impl_block = access_seq(&fields, name, &data.generics)?;
+
+    let ret = quote! {
+        #impl_trait_block
+        #impl_block
+    };
+
+    Ok(ret)
+}
+
+fn access_seq(fields: &[Field], name: &Ident, generics: &Generics) -> Result<TokenStream> {
+    let indices = (0..fields.len()).map(|i| LitInt::new(&format!("{}", i), fields[i].span()));
+    let keys = fields.iter().map(|f| f.ident.as_ref().unwrap());
+    let types = fields.iter().map(|f| &f.ty);
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    let access_seq = quote! {
+        impl #impl_generics #name #ty_generics #where_clause {
+            fn __access_seq<'_a, '_de, A: ::serde::de::SeqAccess<'_de>>(&mut self, idx: usize, seq: &mut A, ctx: &'_a ::presto::types::Context<'_a>)
+                -> ::std::result::Result<(), A::Error> {
+                match idx {
+                    #(
+                        #indices => {
+                            let seed = <#types as ::presto::types::Presto>::seed(ctx);
+                            let data = seq.next_element_seed(seed)?;
+                            if let Some(data) = data {
+                                self.#keys = data;
+                                Ok(())
+                            } else {
+                                Err(<A::Error as ::serde::de::Error>::custom("access seq failed, no more data"))
+                            }
+                        },
+                    )*
+                    _ => unreachable!(),
+                }
+            }
+        }
+    };
+
+    Ok(access_seq)
 }
