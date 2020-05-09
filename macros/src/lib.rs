@@ -101,7 +101,7 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
                 formatter.write_str("todo")
             }
 
-            fn visit_seq<A: ::serde::de::SeqAccess<'_de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+            fn visit_seq<_A: ::serde::de::SeqAccess<'_de>>(self, mut seq: _A) -> Result<Self::Value, _A::Error> {
                 let mut ret = Self::Value::empty();
 
                 let row_map = self.ctx.row_map().expect("invalid context");
@@ -112,7 +112,7 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
                 }
 
                 if let Ok(None) = seq.next_element::<String>() {
-                    Err(<A::Error as ::serde::de::Error>::custom("access seq failed, there are some extra data"))
+                    Err(<_A::Error as ::serde::de::Error>::custom("access seq failed, there are some extra data"))
                 } else {
                     Ok(ret)
                 }
@@ -138,8 +138,8 @@ fn access_seq(fields: &[Field], name: &Ident, generics: &Generics) -> Result<Tok
 
     let access_seq = quote! {
         impl #impl_generics #name #ty_generics #where_clause {
-            fn __access_seq<'_a, '_de, A: ::serde::de::SeqAccess<'_de>>(&mut self, idx: usize, seq: &mut A, ctx: &'_a ::presto::types::Context<'_a>)
-                -> ::std::result::Result<(), A::Error> {
+            fn __access_seq<'_a, '_de, _A: ::serde::de::SeqAccess<'_de>>(&mut self, idx: usize, seq: &mut _A, ctx: &'_a ::presto::types::Context<'_a>)
+                -> ::std::result::Result<(), _A::Error> {
                 match idx {
                     #(
                         #indices => {
@@ -149,7 +149,7 @@ fn access_seq(fields: &[Field], name: &Ident, generics: &Generics) -> Result<Tok
                                 self.#keys = data;
                                 Ok(())
                             } else {
-                                Err(<A::Error as ::serde::de::Error>::custom("access seq failed, no more data"))
+                                Err(<_A::Error as ::serde::de::Error>::custom("access seq failed, no more data"))
                             }
                         },
                     )*
