@@ -11,7 +11,7 @@ struct Person  {
 
 #[derive(Presto)]
 struct Group  {
-    name: &'static str,
+    name: String,
     leader: Person,
 }
 
@@ -26,14 +26,14 @@ fn test_simple() {
 
 fn test_nested() {
     let g = Group {
-        name: "g1",
+        name: "g1".to_string(),
         leader: Person {
             name: "h".to_string(),
             age: 5
         },
     };
 
-    assert_eq!(g.value(), ("g1", (&"h".to_string(), &5)));
+    assert_eq!(g.value(), (&"g1".to_string(), (&"h".to_string(), &5)));
 }
 
 fn main() {
