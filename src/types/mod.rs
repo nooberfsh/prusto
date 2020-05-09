@@ -1,17 +1,18 @@
 mod data_set;
 mod map;
 mod number;
-mod str;
 mod string;
 pub(self) mod util;
 mod vec;
 
-pub use self::str::*;
 pub use map::*;
 pub use number::*;
 pub use number::*;
 pub use string::*;
 pub use vec::*;
+
+//mod str;
+//pub use self::str::*;
 
 use std::borrow::Cow;
 
