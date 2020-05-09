@@ -19,6 +19,8 @@ impl Presto for i32 {
     fn seed<'a, 'de>(_ctx: &'a Context) -> Self::Seed<'a, 'de> {
         I32Seed
     }
+
+    fn empty() -> Self { Default::default() }
 }
 
 impl PrestoMapKey for i32 {}

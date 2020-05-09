@@ -27,6 +27,8 @@ impl<T: Presto> Presto for Vec<T> {
     fn seed<'a, 'de>(ctx: &'a Context) -> Self::Seed<'a, 'de> {
         VecSeed::new(ctx)
     }
+
+    fn empty() -> Self { Default::default() }
 }
 
 pub struct VecSeed<'a, T> {

@@ -17,6 +17,8 @@ impl Presto for String {
     fn seed<'a, 'de>(_ctx: &'a Context) -> Self::Seed<'a, 'de> {
         StringSeed
     }
+
+    fn empty() -> Self { Default::default() }
 }
 
 impl PrestoMapKey for String {}

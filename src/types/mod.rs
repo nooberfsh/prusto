@@ -45,6 +45,8 @@ pub trait Presto {
 
     /// caller must provide a valid context
     fn seed<'a, 'de>(ctx: &'a Context<'a>) -> Self::Seed<'a, 'de>;
+
+    fn empty() -> Self;
 }
 
 pub trait PrestoMapKey: Presto {}
