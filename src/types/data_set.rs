@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use super::util::SerializeIterator;
 use super::{Context, Presto, PrestoTy, VecSeed};
 use crate::models::Column;
-use std::collections::HashMap;
 
 pub struct DataSet<T: Presto> {
     data: Vec<T>,
@@ -84,13 +83,10 @@ impl<'de, T: Presto> Deserialize<'de> for DataSet<T> {
                     return Err(de::Error::missing_field("columns"));
                 };
 
-                if ty.is_match(&T::ty()) {
-                    return Err(de::Error::custom(format!("presto type does not match")));
-                }
-
                 let ty = PrestoTy::Array(Box::new(ty));
-                let index_map = HashMap::new(); // TODO: impl this
-                let ctx = Context::new(&ty, &index_map);
+                let ctx = Context::new::<Vec<T>>(&ty).map_err(|e| {
+                    de::Error::custom(format!("invalid presto type, reason: {}", e))
+                })?;
                 let seed = VecSeed::new(&ctx);
 
                 let data = if let Some(Field::Data) = map.next_key()? {

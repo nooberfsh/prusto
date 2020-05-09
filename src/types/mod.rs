@@ -16,6 +16,7 @@ pub use vec::*;
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use derive_more::Display;
 use itertools::Itertools;
@@ -28,7 +29,7 @@ use crate::{
 };
 
 //TODO: refine it
-#[derive(Display)]
+#[derive(Display, Debug)]
 pub enum Error {
     InvalidPrestoType,
     InvalidColumn,
@@ -51,18 +52,32 @@ pub trait Presto {
 
 pub trait PrestoMapKey: Presto {}
 
+#[derive(Debug)]
 pub struct Context<'a> {
     ty: &'a PrestoTy,
-    map: &'a HashMap<usize, Vec<usize>>,
+    map: Arc<HashMap<usize, Vec<usize>>>,
 }
 
 impl<'a> Context<'a> {
-    pub fn new(ty: &'a PrestoTy, map: &'a HashMap<usize, Vec<usize>>) -> Self {
-        Context { ty, map }
+    pub fn new<T: Presto>(provided: &'a PrestoTy) -> Result<Self, Error> {
+        let target = T::ty();
+        let mut data = HashMap::new();
+
+        if extract(&target, provided, &mut data) {
+            Ok(Context {
+                ty: provided,
+                map: Arc::new(data),
+            })
+        } else {
+            Err(Error::InvalidPrestoType)
+        }
     }
 
     pub fn with_ty(&'a self, ty: &'a PrestoTy) -> Context<'a> {
-        Context { ty, map: self.map }
+        Context {
+            ty,
+            map: self.map.clone(),
+        }
     }
 
     pub fn ty(&self) -> &PrestoTy {
@@ -72,6 +87,59 @@ impl<'a> Context<'a> {
     pub fn row_map(&self) -> Option<&[usize]> {
         let key = self.ty as *const PrestoTy as usize;
         self.map.get(&key).map(|r| &**r)
+    }
+}
+
+fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec<usize>>) -> bool {
+    use PrestoTy::*;
+
+    match (target, provided) {
+        (Integer, Integer) => true,
+        (Varchar, Varchar) => true,
+        (Tuple(t1), Tuple(t2)) => {
+            if t1.len() != t2.len() {
+                false
+            } else {
+                t1.iter().zip(t2.iter()).all(|(l, r)| extract(l, r, data))
+            }
+        }
+        (Row(t1), Row(t2)) => {
+            if t1.len() != t2.len() {
+                false
+            } else {
+                let mut t1k: Vec<_> = t1.clone();
+                t1k.sort_by(|t1, t2| t1.0.cmp(&t2.0));
+                let mut t2k: Vec<_> = t2.clone();
+                t2k.sort_by(|t1, t2| t1.0.cmp(&t2.0));
+
+                let ret = t1k
+                    .iter()
+                    .zip(t2k.iter())
+                    .all(|(l, r)| l.0 == r.0 && extract(&l.1, &r.1, data));
+                if !ret {
+                    return ret;
+                }
+
+                let mut map = Vec::with_capacity(t2.len());
+                for (provided, _) in t2 {
+                    for (i, (target, _)) in t1.iter().enumerate() {
+                        if provided == target {
+                            map.push(i);
+                            break;
+                        }
+                    }
+                }
+                assert_eq!(map.len(), t2.len());
+
+                let key = provided as *const PrestoTy as usize;
+                let prev = data.insert(key, map);
+                assert!(prev.is_none());
+
+                true
+            }
+        }
+        (Map(t1k, t1v), Map(t2k, t2v)) => extract(t1k, t2k, data) && extract(t1v, t2v, data),
+        _ => false,
     }
 }
 
@@ -86,38 +154,6 @@ pub enum PrestoTy {
 }
 
 impl PrestoTy {
-    pub fn is_match(&self, other: &PrestoTy) -> bool {
-        use PrestoTy::*;
-
-        match (self, other) {
-            (Integer, Integer) => true,
-            (Varchar, Varchar) => true,
-            (Tuple(t1), Tuple(t2)) => {
-                if t1.len() != t2.len() {
-                    false
-                } else {
-                    t1.iter().zip(t2.iter()).all(|(l, r)| l.is_match(r))
-                }
-            }
-            (Row(t1), Row(t2)) => {
-                if t1.len() != t2.len() {
-                    false
-                } else {
-                    let mut t1k: Vec<_> = t1.clone();
-                    t1k.sort_by(|t1, t2| t1.0.cmp(&t2.0));
-                    let mut t2k: Vec<_> = t2.clone();
-                    t2k.sort_by(|t1, t2| t1.0.cmp(&t2.0));
-
-                    t1k.iter()
-                        .zip(t2k.iter())
-                        .all(|(l, r)| l.0 == r.0 && l.1.is_match(&r.1))
-                }
-            }
-            (Map(t1k, t1v), Map(t2k, t2v)) => t1k.is_match(t2k) && t1v.is_match(t2v),
-            _ => false,
-        }
-    }
-
     pub fn from_type_signature(mut sig: TypeSignature) -> Result<Self, Error> {
         let ty = match sig.raw_type {
             RawPrestoTy::Integer => PrestoTy::Integer,
