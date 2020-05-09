@@ -28,7 +28,9 @@ impl<T: Presto> Presto for Vec<T> {
         VecSeed::new(ctx)
     }
 
-    fn empty() -> Self { Default::default() }
+    fn empty() -> Self {
+        Default::default()
+    }
 }
 
 pub struct VecSeed<'a, T> {
@@ -38,6 +40,7 @@ pub struct VecSeed<'a, T> {
 }
 
 impl<'a, T> VecSeed<'a, T> {
+    // caller must provide a valid `Context`
     pub(super) fn new(ctx: &'a Context) -> Self {
         if let PrestoTy::Array(ty) = ctx.ty {
             VecSeed {

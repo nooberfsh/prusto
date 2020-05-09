@@ -18,7 +18,9 @@ impl Presto for String {
         StringSeed
     }
 
-    fn empty() -> Self { Default::default() }
+    fn empty() -> Self {
+        Default::default()
+    }
 }
 
 impl PrestoMapKey for String {}

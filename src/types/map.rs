@@ -39,7 +39,9 @@ impl<K: PrestoMapKey + Eq + Hash, V: Presto> Presto for HashMap<K, V> {
         }
     }
 
-    fn empty() -> Self { Default::default() }
+    fn empty() -> Self {
+        Default::default()
+    }
 }
 
 pub struct MapSeed<'a, K, V> {

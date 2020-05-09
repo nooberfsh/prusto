@@ -20,7 +20,9 @@ impl Presto for i32 {
         I32Seed
     }
 
-    fn empty() -> Self { Default::default() }
+    fn empty() -> Self {
+        Default::default()
+    }
 }
 
 impl PrestoMapKey for i32 {}
