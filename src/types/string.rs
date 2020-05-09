@@ -2,7 +2,7 @@ use std::fmt;
 
 use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
 
-use super::{Error, Presto, PrestoMapKey, PrestoTy};
+use super::{Context, Presto, PrestoMapKey, PrestoTy};
 
 impl Presto for String {
     type ValueType<'a> = &'a String;
@@ -14,8 +14,8 @@ impl Presto for String {
     fn ty() -> PrestoTy {
         PrestoTy::Varchar
     }
-    fn seed<'a, 'de>(_ty: &'a PrestoTy) -> Result<Self::Seed<'a, 'de>, Error> {
-        Ok(StringSeed)
+    fn seed<'a, 'de>(_ctx: &'a Context) -> Self::Seed<'a, 'de> {
+        StringSeed
     }
 }
 

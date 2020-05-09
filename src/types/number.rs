@@ -2,7 +2,7 @@ use std::fmt;
 
 use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
 
-use super::{Error, Presto, PrestoMapKey, PrestoTy};
+use super::{Context, Presto, PrestoMapKey, PrestoTy};
 
 impl Presto for i32 {
     type ValueType<'a> = &'a i32;
@@ -16,8 +16,8 @@ impl Presto for i32 {
         PrestoTy::Integer
     }
 
-    fn seed<'a, 'de>(_ty: &'a PrestoTy) -> Result<Self::Seed<'a, 'de>, Error> {
-        Ok(I32Seed)
+    fn seed<'a, 'de>(_ctx: &'a Context) -> Self::Seed<'a, 'de> {
+        I32Seed
     }
 }
 

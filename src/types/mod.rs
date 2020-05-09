@@ -15,6 +15,7 @@ pub use vec::*;
 //pub use self::str::*;
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 
 use derive_more::Display;
 use itertools::Itertools;
@@ -39,11 +40,38 @@ pub trait Presto {
     type Seed<'a, 'de>: DeserializeSeed<'de, Value = Self>;
 
     fn value(&self) -> Self::ValueType<'_>;
+
     fn ty() -> PrestoTy;
-    fn seed<'a, 'de>(ty: &'a PrestoTy) -> Result<Self::Seed<'a, 'de>, Error>;
+
+    /// caller must provide a valid context
+    fn seed<'a, 'de>(ctx: &'a Context<'a>) -> Self::Seed<'a, 'de>;
 }
 
 pub trait PrestoMapKey: Presto {}
+
+pub struct Context<'a> {
+    ty: &'a PrestoTy,
+    map: &'a HashMap<usize, Vec<usize>>,
+}
+
+impl<'a> Context<'a> {
+    pub fn new(ty: &'a PrestoTy, map: &'a HashMap<usize, Vec<usize>>) -> Self {
+        Context { ty, map }
+    }
+
+    pub fn with_ty(&'a self, ty: &'a PrestoTy) -> Context<'a> {
+        Context { ty, map: self.map }
+    }
+
+    pub fn ty(&self) -> &PrestoTy {
+        self.ty
+    }
+
+    pub fn row_map(&self) -> Option<&[usize]> {
+        let key = self.ty as *const PrestoTy as usize;
+        self.map.get(&key).map(|r| &**r)
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum PrestoTy {

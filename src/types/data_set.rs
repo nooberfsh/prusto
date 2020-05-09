@@ -6,8 +6,9 @@ use serde::ser::{self, SerializeStruct, Serializer};
 use serde::{Deserialize, Serialize};
 
 use super::util::SerializeIterator;
-use super::{Presto, PrestoTy, VecSeed};
+use super::{Context, Presto, PrestoTy, VecSeed};
 use crate::models::Column;
+use std::collections::HashMap;
 
 pub struct DataSet<T: Presto> {
     data: Vec<T>,
@@ -88,9 +89,11 @@ impl<'de, T: Presto> Deserialize<'de> for DataSet<T> {
                 }
 
                 let ty = PrestoTy::Array(Box::new(ty));
+                let index_map = HashMap::new(); // TODO: impl this
+                let ctx = Context::new(&ty, &index_map);
+                let seed = VecSeed::new(&ctx);
 
                 let data = if let Some(Field::Data) = map.next_key()? {
-                    let seed = VecSeed(&ty, PhantomData);
                     map.next_value_seed(seed)?
                 } else {
                     return Err(de::Error::missing_field("data"));

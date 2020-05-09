@@ -1,11 +1,11 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use serde::de::{self, DeserializeSeed, Deserializer, SeqAccess, Visitor};
+use serde::de::{DeserializeSeed, Deserializer, SeqAccess, Visitor};
 use serde::Serialize;
 
 use super::util::SerializeIterator;
-use super::{Error, Presto, PrestoTy};
+use super::{Context, Presto, PrestoTy};
 
 impl<T: Presto> Presto for Vec<T> {
     type ValueType<'a> = impl Serialize;
@@ -24,16 +24,30 @@ impl<T: Presto> Presto for Vec<T> {
         PrestoTy::Array(Box::new(T::ty()))
     }
 
-    fn seed<'a, 'de>(ty: &'a PrestoTy) -> Result<Self::Seed<'a, 'de>, Error> {
-        if let PrestoTy::Array(ty) = ty {
-            Ok(VecSeed(ty, PhantomData))
-        } else {
-            Err(Error::InvalidPrestoType)
-        }
+    fn seed<'a, 'de>(ctx: &'a Context) -> Self::Seed<'a, 'de> {
+        VecSeed::new(ctx)
     }
 }
 
-pub struct VecSeed<'a, T>(pub(super) &'a PrestoTy, pub(super) PhantomData<T>);
+pub struct VecSeed<'a, T> {
+    ctx: &'a Context<'a>,
+    ty: &'a PrestoTy,
+    _marker: PhantomData<T>,
+}
+
+impl<'a, T> VecSeed<'a, T> {
+    pub(super) fn new(ctx: &'a Context) -> Self {
+        if let PrestoTy::Array(ty) = ctx.ty {
+            VecSeed {
+                ctx,
+                ty: &*ty,
+                _marker: PhantomData,
+            }
+        } else {
+            panic!("invalid context")
+        }
+    }
+}
 
 impl<'a, 'de, T: Presto> Visitor<'de> for VecSeed<'a, T> {
     type Value = Vec<T>;
@@ -45,9 +59,8 @@ impl<'a, 'de, T: Presto> Visitor<'de> for VecSeed<'a, T> {
         A: SeqAccess<'de>,
     {
         let mut ret = vec![];
-        while let Some(d) = seq.next_element_seed(
-            T::seed(self.0).map_err(|e| <A::Error as de::Error>::custom(format!("{}", e)))?,
-        )? {
+        let ctx = self.ctx.with_ty(self.ty);
+        while let Some(d) = seq.next_element_seed(T::seed(&ctx))? {
             ret.push(d)
         }
         Ok(ret)

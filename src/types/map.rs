@@ -3,11 +3,11 @@ use std::fmt;
 use std::hash::Hash;
 use std::marker::PhantomData;
 
-use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, Visitor};
+use serde::de::{DeserializeSeed, Deserializer, MapAccess, Visitor};
 use serde::Serialize;
 
 use super::util::SerializePairIterator;
-use super::{Error, Presto, PrestoMapKey, PrestoTy};
+use super::{Context, Presto, PrestoMapKey, PrestoTy};
 
 impl<K: PrestoMapKey + Eq + Hash, V: Presto> Presto for HashMap<K, V> {
     type ValueType<'a> = impl Serialize;
@@ -26,16 +26,26 @@ impl<K: PrestoMapKey + Eq + Hash, V: Presto> Presto for HashMap<K, V> {
         PrestoTy::Map(Box::new(K::ty()), Box::new(V::ty()))
     }
 
-    fn seed<'a, 'de>(ty: &'a PrestoTy) -> Result<Self::Seed<'a, 'de>, Error> {
-        if let PrestoTy::Map(t1, t2) = ty {
-            Ok(MapSeed(t1, t2, PhantomData))
+    fn seed<'a, 'de>(ctx: &'a Context<'a>) -> Self::Seed<'a, 'de> {
+        if let PrestoTy::Map(t1, t2) = ctx.ty() {
+            MapSeed {
+                ctx,
+                key_ty: &*t1,
+                value_ty: &*t2,
+                _marker: PhantomData,
+            }
         } else {
-            Err(Error::InvalidPrestoType)
+            unreachable!()
         }
     }
 }
 
-pub struct MapSeed<'a, K, V>(&'a PrestoTy, &'a PrestoTy, PhantomData<(K, V)>);
+pub struct MapSeed<'a, K, V> {
+    ctx: &'a Context<'a>,
+    key_ty: &'a PrestoTy,
+    value_ty: &'a PrestoTy,
+    _marker: PhantomData<(K, V)>,
+}
 
 impl<'a, 'de, K: PrestoMapKey + Eq + Hash, V: Presto> Visitor<'de> for MapSeed<'a, K, V> {
     type Value = HashMap<K, V>;
@@ -47,10 +57,9 @@ impl<'a, 'de, K: PrestoMapKey + Eq + Hash, V: Presto> Visitor<'de> for MapSeed<'
         A: MapAccess<'de>,
     {
         let mut ret = HashMap::new();
-        while let Some((k, v)) = map.next_entry_seed(
-            K::seed(self.0).map_err(|e| <A::Error as de::Error>::custom(format!("{}", e)))?,
-            V::seed(self.1).map_err(|e| <A::Error as de::Error>::custom(format!("{}", e)))?,
-        )? {
+        let key_ctx = self.ctx.with_ty(self.key_ty);
+        let value_ctx = self.ctx.with_ty(self.value_ty);
+        while let Some((k, v)) = map.next_entry_seed(K::seed(&key_ctx), V::seed(&value_ctx))? {
             ret.insert(k, v);
         }
         Ok(ret)
