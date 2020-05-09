@@ -59,3 +59,11 @@ fn test_nested() {
         unreachable!()
     }
 }
+
+#[test]
+fn test_false() {
+    let provided = C::ty();
+    let res = Context::new::<B>(&provided);
+
+    assert!(res.is_err());
+}

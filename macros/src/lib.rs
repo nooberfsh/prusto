@@ -37,7 +37,7 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
 
     let mut seed_generics = data.generics.clone();
     seed_generics.params.push(parse_quote!('_a));
-    let (_, seed_ty_generics, _) = seed_generics.split_for_impl();
+    let (seed_impl_generics, seed_ty_generics, _) = seed_generics.split_for_impl();
 
     let mut seed_de_generics = seed_generics.clone();
     seed_de_generics.params.push(parse_quote!('_de));
@@ -77,7 +77,7 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
             }
         }
 
-        #vis struct #seed_name #seed_ty_generics #where_clause {
+        #vis struct #seed_name #seed_impl_generics #where_clause {
             ctx: &'_a ::presto::types::Context<'_a>,
             types: &'_a [(::std::string::String,::presto::types::PrestoTy)],
             _marker: ::std::marker::PhantomData<#name #ty_generics>,
