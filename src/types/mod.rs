@@ -107,9 +107,10 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
             if t1.len() != t2.len() {
                 false
             } else {
-                let mut t1k: Vec<_> = t1.clone();
+                // create a vector of the original element's reference
+                let mut t1k: Vec<_> = t1.iter().collect();
                 t1k.sort_by(|t1, t2| t1.0.cmp(&t2.0));
-                let mut t2k: Vec<_> = t2.clone();
+                let mut t2k: Vec<_> = t2.iter().collect();
                 t2k.sort_by(|t1, t2| t1.0.cmp(&t2.0));
 
                 let ret = t1k
