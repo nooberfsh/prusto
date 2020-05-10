@@ -57,7 +57,7 @@ impl<'a, T> VecSeed<'a, T> {
 impl<'a, 'de, T: Presto> Visitor<'de> for VecSeed<'a, T> {
     type Value = Vec<T>;
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("vec seed")
+        formatter.write_str("sequence of same presto type")
     }
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where

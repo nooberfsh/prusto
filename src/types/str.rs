@@ -27,7 +27,7 @@ pub struct StrSeed;
 impl<'de> Visitor<'de> for StrSeed {
     type Value = &'de str;
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("&str seed")
+        formatter.write_str("&str")
     }
     fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
     where

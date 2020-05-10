@@ -30,7 +30,7 @@ pub struct StringSeed;
 impl<'de> Visitor<'de> for StringSeed {
     type Value = String;
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("string seed")
+        formatter.write_str("string")
     }
     fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
     where

@@ -98,7 +98,7 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
             type Value = #name #ty_generics;
 
             fn expecting(&self, formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                formatter.write_str("todo")
+                formatter.write_str("sequence of same or different presto type")
             }
 
             fn visit_seq<_A: ::serde::de::SeqAccess<'_de>>(self, mut seq: _A) -> Result<Self::Value, _A::Error> {

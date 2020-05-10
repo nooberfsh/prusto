@@ -54,7 +54,7 @@ pub struct MapSeed<'a, K, V> {
 impl<'a, 'de, K: PrestoMapKey + Eq + Hash, V: Presto> Visitor<'de> for MapSeed<'a, K, V> {
     type Value = HashMap<K, V>;
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("hash map seed")
+        formatter.write_str("map")
     }
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
     where

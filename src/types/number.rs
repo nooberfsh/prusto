@@ -32,7 +32,7 @@ pub struct I32Seed;
 impl<'de> Visitor<'de> for I32Seed {
     type Value = i32;
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("i32 seed")
+        formatter.write_str("i32")
     }
 
     fn visit_i32<E>(self, value: i32) -> Result<Self::Value, E>
