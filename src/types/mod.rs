@@ -1,6 +1,7 @@
 mod data_set;
 mod map;
 mod number;
+mod boolean;
 mod string;
 pub(self) mod util;
 mod vec;
@@ -10,6 +11,7 @@ pub use number::*;
 pub use number::*;
 pub use string::*;
 pub use vec::*;
+pub use boolean::*;
 
 //mod str;
 //pub use self::str::*;
@@ -146,6 +148,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
 
 #[derive(Clone, Debug)]
 pub enum PrestoTy {
+    Boolean,
     Integer,
     Varchar,
     Tuple(Vec<PrestoTy>),
@@ -157,6 +160,7 @@ pub enum PrestoTy {
 impl PrestoTy {
     pub fn from_type_signature(mut sig: TypeSignature) -> Result<Self, Error> {
         let ty = match sig.raw_type {
+            RawPrestoTy::Boolean => PrestoTy::Boolean,
             RawPrestoTy::Integer => PrestoTy::Integer,
             RawPrestoTy::VarChar => PrestoTy::Varchar,
             RawPrestoTy::Array if sig.arguments.len() == 1 => {
@@ -246,6 +250,7 @@ impl PrestoTy {
         let raw_ty = self.raw_type();
 
         let params = match self {
+            Boolean => vec![],
             Integer => vec![],
             Varchar => vec![ClientTypeSignatureParameter::LongLiteral(2147483647)],
             Tuple(ts) => ts
@@ -282,6 +287,7 @@ impl PrestoTy {
         use PrestoTy::*;
 
         match self {
+            Boolean => RawPrestoTy::Boolean.to_str().into(),
             Integer => RawPrestoTy::Integer.to_str().into(),
             Varchar => RawPrestoTy::VarChar.to_str().into(),
             Tuple(ts) => format!(
@@ -313,6 +319,7 @@ impl PrestoTy {
         use PrestoTy::*;
 
         match self {
+            Boolean => RawPrestoTy::Boolean,
             Integer => RawPrestoTy::Integer,
             Varchar => RawPrestoTy::VarChar,
             Tuple(_) => RawPrestoTy::Row,
