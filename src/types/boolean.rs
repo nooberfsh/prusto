@@ -13,7 +13,7 @@ impl Presto for bool {
     }
 
     fn ty() -> PrestoTy {
-        PrestoTy::Integer
+        PrestoTy::Boolean
     }
 
     fn seed<'a, 'de>(_ctx: &'a Context) -> Self::Seed<'a, 'de> {
