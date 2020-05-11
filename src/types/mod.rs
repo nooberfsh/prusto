@@ -5,6 +5,7 @@ mod boolean;
 mod string;
 pub(self) mod util;
 mod vec;
+mod option;
 
 pub use map::*;
 pub use number::*;
@@ -12,6 +13,7 @@ pub use number::*;
 pub use string::*;
 pub use vec::*;
 pub use boolean::*;
+pub use option::*;
 
 //mod str;
 //pub use self::str::*;
@@ -96,6 +98,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
     use PrestoTy::*;
 
     match (target, provided) {
+        (Option(ty), provided) => extract(ty, provided, data),
         (Integer, Integer) => true,
         (Varchar, Varchar) => true,
         (Tuple(t1), Tuple(t2)) => {
@@ -148,6 +151,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
 
 #[derive(Clone, Debug)]
 pub enum PrestoTy {
+    Option(Box<PrestoTy>),
     Boolean,
     Integer,
     Varchar,
@@ -250,6 +254,9 @@ impl PrestoTy {
         let raw_ty = self.raw_type();
 
         let params = match self {
+            Option(t) => vec![ClientTypeSignatureParameter::TypeSignature(
+                t.into_type_signature(),
+            )],
             Boolean => vec![],
             Integer => vec![],
             Varchar => vec![ClientTypeSignatureParameter::LongLiteral(2147483647)],
@@ -287,6 +294,7 @@ impl PrestoTy {
         use PrestoTy::*;
 
         match self {
+            Option(t) => format!("{}({})", RawPrestoTy::Array.to_str(), t.full_type()).into(),
             Boolean => RawPrestoTy::Boolean.to_str().into(),
             Integer => RawPrestoTy::Integer.to_str().into(),
             Varchar => RawPrestoTy::VarChar.to_str().into(),
@@ -319,6 +327,7 @@ impl PrestoTy {
         use PrestoTy::*;
 
         match self {
+            Option(ty) => ty.raw_type(),
             Boolean => RawPrestoTy::Boolean,
             Integer => RawPrestoTy::Integer,
             Varchar => RawPrestoTy::VarChar,
