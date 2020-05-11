@@ -2,7 +2,6 @@ use std::fmt;
 use std::marker::PhantomData;
 
 use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
-use serde::Serialize;
 
 use super::{Context, Presto, PrestoTy};
 
@@ -11,11 +10,11 @@ impl<T: Presto> Presto for Option<T> {
     type Seed<'a, 'de> = OptionSeed<'a, T>;
 
     fn value(&self) -> Self::ValueType<'_> {
-        self.map(|t|t.value())
+        self.as_ref().map(|t| t.value())
     }
 
     fn ty() -> PrestoTy {
-        T::ty() // TODO:
+        PrestoTy::Option(Box::new(T::ty()))
     }
 
     fn seed<'a, 'de>(ctx: &'a Context) -> Self::Seed<'a, 'de> {
@@ -29,7 +28,7 @@ impl<T: Presto> Presto for Option<T> {
 
 pub struct OptionSeed<'a, T> {
     ctx: &'a Context<'a>,
-    _marker: PhantomData<T>
+    _marker: PhantomData<T>,
 }
 
 impl<'a, T> OptionSeed<'a, T> {
@@ -48,24 +47,27 @@ impl<'a, 'de, T: Presto> Visitor<'de> for OptionSeed<'a, T> {
         formatter.write_str(T::ty().raw_type().to_str())
     }
 
-    fn visit_none<E>(self) -> Result<Self::Value, E> where
-        E: de::Error, {
+    fn visit_none<E>(self) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
         Ok(None)
-
     }
 
-    fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error> where
-        D: Deserializer<'de> {
+    fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         let seed = T::seed(self.ctx);
-        seed.deserialize(deserializer)
+        seed.deserialize(deserializer).map(|t| Some(t))
     }
 }
 
 impl<'a, 'de, T: Presto> DeserializeSeed<'de> for OptionSeed<'a, T> {
-    type Value = bool;
+    type Value = Option<T>;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_option(self)
     }

@@ -36,8 +36,8 @@ impl<'de> Visitor<'de> for BoolSeed {
     }
 
     fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
-        where
-            E: de::Error,
+    where
+        E: de::Error,
     {
         Ok(value)
     }
@@ -46,8 +46,8 @@ impl<'de> Visitor<'de> for BoolSeed {
 impl<'de> DeserializeSeed<'de> for BoolSeed {
     type Value = bool;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_bool(self)
     }

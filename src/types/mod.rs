@@ -1,19 +1,19 @@
+mod boolean;
 mod data_set;
 mod map;
 mod number;
-mod boolean;
+mod option;
 mod string;
 pub(self) mod util;
 mod vec;
-mod option;
 
+pub use boolean::*;
 pub use map::*;
 pub use number::*;
 pub use number::*;
+pub use option::*;
 pub use string::*;
 pub use vec::*;
-pub use boolean::*;
-pub use option::*;
 
 //mod str;
 //pub use self::str::*;

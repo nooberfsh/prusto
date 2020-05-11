@@ -1,8 +1,8 @@
 #![allow(incomplete_features)]
 #![feature(generic_associated_types)]
 
-use presto::Presto;
 use presto::types::{Context, PrestoTy};
+use presto::Presto;
 
 #[derive(Presto)]
 struct A {
