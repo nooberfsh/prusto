@@ -21,3 +21,4 @@ derive_more = "0.99"
 
 [dev-dependencies]
 trybuild = "1.0"
+maplit = "1.0"

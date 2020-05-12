@@ -1,0 +1,75 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "map(varchar,integer)",
+            "typeSignature": {
+                "rawType": "map",
+                "typeArguments": [
+                    {
+                        "rawType": "varchar",
+                        "typeArguments": [],
+                        "literalArguments": [],
+                        "arguments": [
+                            {
+                                "kind": "LONG_LITERAL",
+                                "value": 2147483647
+                            }
+                        ]
+                    },
+                    {
+                        "rawType": "integer",
+                        "typeArguments": [],
+                        "literalArguments": [],
+                        "arguments": []
+                    }
+                ],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "TYPE_SIGNATURE",
+                        "value": {
+                            "rawType": "varchar",
+                            "typeArguments": [],
+                            "literalArguments": [],
+                            "arguments": [
+                                {
+                                    "kind": "LONG_LITERAL",
+                                    "value": 2147483647
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "kind": "TYPE_SIGNATURE",
+                        "value": {
+                            "rawType": "integer",
+                            "typeArguments": [],
+                            "literalArguments": [],
+                            "arguments": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "b",
+            "type": "integer",
+            "typeSignature": {
+                "rawType": "integer",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        }
+    ],
+    "data": [
+        [
+            {
+                "bar": 2,
+                "foo": 1
+            },
+            5
+        ]
+    ]
+}

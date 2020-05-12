@@ -3,8 +3,10 @@
 
 use std::fs::File;
 use std::io::Read;
+use std::collections::HashMap;
 
 use serde_json::value::Value;
+use maplit::hashmap;
 
 use presto::types::DataSet;
 use presto::Column;
@@ -100,6 +102,32 @@ fn test_vec() {
         d[0],
         A {
             a: vec![1, 2, 3],
+            b: 5,
+        }
+    );
+}
+
+#[test]
+fn test_map() {
+    #[derive(Presto, Eq, PartialEq, Debug, Clone)]
+    struct A {
+        a: HashMap<String, i32>,
+        b: i32,
+    }
+
+    let (s, v) = read("map");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+    assert_eq!(
+        d[0],
+        A {
+            a: hashmap![
+                "foo".to_string() => 1,
+                "bar".to_string() => 2,
+            ],
             b: 5,
         }
     );
