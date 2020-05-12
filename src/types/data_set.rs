@@ -14,7 +14,17 @@ pub struct DataSet<T: Presto> {
 }
 
 impl<T: Presto> DataSet<T> {
-    pub fn into_vec(self) -> Vec<T> { self.data }
+    pub fn into_vec(self) -> Vec<T> {
+        self.data
+    }
+}
+
+impl<T: Presto + Clone> Clone for DataSet<T> {
+    fn clone(&self) -> Self {
+        DataSet {
+            data: self.data.clone(),
+        }
+    }
 }
 
 impl<T: Presto> Serialize for DataSet<T> {

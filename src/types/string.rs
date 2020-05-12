@@ -40,8 +40,8 @@ impl<'de> Visitor<'de> for StringSeed {
     }
 
     fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
-        where
-            E: de::Error,
+    where
+        E: de::Error,
     {
         Ok(s.to_string())
     }

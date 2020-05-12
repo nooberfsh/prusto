@@ -8,13 +8,13 @@ pub(self) mod util;
 mod vec;
 
 pub use boolean::*;
+pub use data_set::*;
 pub use map::*;
 pub use number::*;
 pub use number::*;
 pub use option::*;
 pub use string::*;
 pub use vec::*;
-pub use data_set::*;
 
 //mod str;
 //pub use self::str::*;
@@ -257,9 +257,7 @@ impl PrestoTy {
         let raw_ty = self.raw_type();
 
         let params = match self {
-            Option(t) => vec![ClientTypeSignatureParameter::TypeSignature(
-                t.into_type_signature(),
-            )],
+            Option(t) => return t.into_type_signature(),
             Boolean => vec![],
             Integer => vec![],
             Varchar => vec![ClientTypeSignatureParameter::LongLiteral(2147483647)],
@@ -297,7 +295,7 @@ impl PrestoTy {
         use PrestoTy::*;
 
         match self {
-            Option(t) => format!("{}({})", RawPrestoTy::Array.to_str(), t.full_type()).into(),
+            Option(t) => t.full_type(),
             Boolean => RawPrestoTy::Boolean.to_str().into(),
             Integer => RawPrestoTy::Integer.to_str().into(),
             Varchar => RawPrestoTy::VarChar.to_str().into(),
