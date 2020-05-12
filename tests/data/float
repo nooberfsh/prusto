@@ -1,0 +1,30 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "real",
+            "typeSignature": {
+                "rawType": "real",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "b",
+            "type": "double",
+            "typeSignature": {
+                "rawType": "double",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        }
+    ],
+    "data": [
+        [
+            -3,
+            -1
+        ]
+    ]
+}

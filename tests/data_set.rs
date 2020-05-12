@@ -196,3 +196,25 @@ fn test_integer() {
         }
     );
 }
+
+#[test]
+fn test_float() {
+    #[derive(Presto, PartialEq, Debug, Clone)]
+    struct A {
+        a: f32,
+        b: f64,
+    }
+
+    let (s, _) = read("float");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+    assert_eq!(
+        d[0],
+        A {
+            a: -3_f32,
+            b: -1_f64,
+        }
+    );
+}

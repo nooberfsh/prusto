@@ -1,7 +1,8 @@
 mod boolean;
 mod data_set;
-mod map;
+mod float;
 mod integer;
+mod map;
 mod option;
 mod string;
 pub(self) mod util;
@@ -9,9 +10,10 @@ mod vec;
 
 pub use boolean::*;
 pub use data_set::*;
+pub use float::*;
+pub use integer::*;
+pub use integer::*;
 pub use map::*;
-pub use integer::*;
-pub use integer::*;
 pub use option::*;
 pub use string::*;
 pub use vec::*;
@@ -102,6 +104,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
         (Option(ty), provided) => extract(ty, provided, data),
         (Boolean, Boolean) => true,
         (PrestoInt(_), PrestoInt(_)) => true,
+        (PrestoFloat(_), PrestoFloat(_)) => true,
         (Varchar, Varchar) => true,
         (Tuple(t1), Tuple(t2)) => {
             if t1.len() != t2.len() {
@@ -157,6 +160,7 @@ pub enum PrestoTy {
     Option(Box<PrestoTy>),
     Boolean,
     PrestoInt(PrestoInt),
+    PrestoFloat(PrestoFloat),
     Varchar,
     Tuple(Vec<PrestoTy>),
     Row(Vec<(String, PrestoTy)>),
@@ -176,15 +180,25 @@ pub enum PrestoInt {
     U64,
 }
 
+#[derive(Clone, Debug)]
+pub enum PrestoFloat {
+    F32,
+    F64,
+}
+
 impl PrestoTy {
     pub fn from_type_signature(mut sig: TypeSignature) -> Result<Self, Error> {
+        use PrestoFloat::*;
         use PrestoInt::*;
+
         let ty = match sig.raw_type {
             RawPrestoTy::Boolean => PrestoTy::Boolean,
             RawPrestoTy::TinyInt => PrestoTy::PrestoInt(I8),
             RawPrestoTy::SmallInt => PrestoTy::PrestoInt(I16),
             RawPrestoTy::Integer => PrestoTy::PrestoInt(I32),
             RawPrestoTy::BigInt => PrestoTy::PrestoInt(I64),
+            RawPrestoTy::Real => PrestoTy::PrestoFloat(F32),
+            RawPrestoTy::Double => PrestoTy::PrestoFloat(F64),
             RawPrestoTy::VarChar => PrestoTy::Varchar,
             RawPrestoTy::Array if sig.arguments.len() == 1 => {
                 let sig = sig.arguments.pop().unwrap();
@@ -276,6 +290,7 @@ impl PrestoTy {
             Option(t) => return t.into_type_signature(),
             Boolean => vec![],
             PrestoInt(_) => vec![],
+            PrestoFloat(_) => vec![],
             Varchar => vec![ClientTypeSignatureParameter::LongLiteral(2147483647)],
             Tuple(ts) => ts
                 .into_iter()
@@ -314,6 +329,7 @@ impl PrestoTy {
             Option(t) => t.full_type(),
             Boolean => RawPrestoTy::Boolean.to_str().into(),
             PrestoInt(ty) => ty.raw_type().to_str().into(),
+            PrestoFloat(ty) => ty.raw_type().to_str().into(),
             Varchar => RawPrestoTy::VarChar.to_str().into(),
             Tuple(ts) => format!(
                 "{}({})",
@@ -347,6 +363,7 @@ impl PrestoTy {
             Option(ty) => ty.raw_type(),
             Boolean => RawPrestoTy::Boolean,
             PrestoInt(ty) => ty.raw_type(),
+            PrestoFloat(ty) => ty.raw_type(),
             Varchar => RawPrestoTy::VarChar,
             Tuple(_) => RawPrestoTy::Row,
             Row(_) => RawPrestoTy::Row,
@@ -368,6 +385,16 @@ impl PrestoInt {
             U16 => RawPrestoTy::SmallInt,
             U32 => RawPrestoTy::Integer,
             U64 => RawPrestoTy::BigInt,
+        }
+    }
+}
+
+impl PrestoFloat {
+    pub fn raw_type(&self) -> RawPrestoTy {
+        use PrestoFloat::*;
+        match self {
+            F32 => RawPrestoTy::Real,
+            F64 => RawPrestoTy::Double,
         }
     }
 }

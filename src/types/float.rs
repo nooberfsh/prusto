@@ -1,11 +1,10 @@
-use std::convert::TryFrom;
 use std::fmt;
 
 use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
 
-use super::{Context, Presto, PrestoInt, PrestoMapKey, PrestoTy};
+use super::{Context, Presto, PrestoFloat, PrestoMapKey, PrestoTy};
 
-macro_rules! gen_int {
+macro_rules! gen_float {
     ($ty:ty, $seed:ident, $pty:expr, $des:expr, $de: ident) => {
         impl Presto for $ty {
             type ValueType<'a> = &'a $ty;
@@ -42,56 +41,97 @@ macro_rules! gen_int {
             where
                 E: de::Error,
             {
-                Self::Value::try_from(value).map_err(|e| E::custom(e))
+                Ok(value.into())
             }
 
             fn visit_i8<E>(self, value: i8) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
-                Self::Value::try_from(value).map_err(|e| E::custom(e))
+                Ok(value.into())
             }
 
             fn visit_u16<E>(self, value: u16) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
-                Self::Value::try_from(value).map_err(|e| E::custom(e))
+                Ok(value.into())
             }
 
             fn visit_i16<E>(self, value: i16) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
-                Self::Value::try_from(value).map_err(|e| E::custom(e))
+                Ok(value.into())
             }
 
             fn visit_u32<E>(self, value: u32) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
-                Self::Value::try_from(value).map_err(|e| E::custom(e))
+                if value as f64 > Self::Value::MAX as f64 {
+                    Err(E::custom(format!("{} out of range: {}", $des, value)))
+                } else {
+                    Ok(value as Self::Value)
+                }
             }
 
             fn visit_i32<E>(self, value: i32) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
-                Self::Value::try_from(value).map_err(|e| E::custom(e))
+                if value as f64 > Self::Value::MAX as f64
+                    || (value as f64) < Self::Value::MIN as f64
+                {
+                    Err(E::custom(format!("{} out of range: {}", $des, value)))
+                } else {
+                    Ok(value as Self::Value)
+                }
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
-                Self::Value::try_from(value).map_err(|e| E::custom(e))
+                if value as f64 > Self::Value::MAX as f64 {
+                    Err(E::custom(format!("{} out of range: {}", $des, value)))
+                } else {
+                    Ok(value as Self::Value)
+                }
             }
 
             fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
-                Self::Value::try_from(value).map_err(|e| E::custom(e))
+                if value as f64 > Self::Value::MAX as f64
+                    || (value as f64) < Self::Value::MIN as f64
+                {
+                    Err(E::custom(format!("{} out of range: {}", $des, value)))
+                } else {
+                    Ok(value as Self::Value)
+                }
+            }
+
+            fn visit_f32<E>(self, value: f32) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(value as Self::Value)
+            }
+
+            fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                if value.is_nan() {
+                    return Ok(Self::Value::NAN);
+                }
+                if value > Self::Value::MAX as f64 || value < Self::Value::MIN as f64 {
+                    Err(E::custom(format!("{} out of range: {}", $des, value)))
+                } else {
+                    Ok(value as Self::Value)
+                }
             }
         }
 
@@ -107,50 +147,18 @@ macro_rules! gen_int {
     };
 }
 
-use PrestoInt::*;
-gen_int!(i8, I8Seed, PrestoTy::PrestoInt(I8), "i8", deserialize_i8);
-gen_int!(
-    i16,
-    I16Seed,
-    PrestoTy::PrestoInt(I16),
-    "i16",
-    deserialize_i16
+use PrestoFloat::*;
+gen_float!(
+    f32,
+    F32Seed,
+    PrestoTy::PrestoFloat(F32),
+    "f32",
+    deserialize_f32
 );
-gen_int!(
-    i32,
-    I32Seed,
-    PrestoTy::PrestoInt(I32),
-    "i32",
-    deserialize_i32
+gen_float!(
+    f64,
+    F64Seed,
+    PrestoTy::PrestoFloat(F64),
+    "f64",
+    deserialize_f64
 );
-gen_int!(
-    i64,
-    I64Seed,
-    PrestoTy::PrestoInt(I64),
-    "i64",
-    deserialize_i64
-);
-
-gen_int!(u8, U8Seed, PrestoTy::PrestoInt(U8), "u8", deserialize_u8);
-gen_int!(
-    u16,
-    U16Seed,
-    PrestoTy::PrestoInt(U16),
-    "u16",
-    deserialize_u16
-);
-gen_int!(
-    u32,
-    U32Seed,
-    PrestoTy::PrestoInt(U32),
-    "u32",
-    deserialize_u32
-);
-gen_int!(
-    u64,
-    U64Seed,
-    PrestoTy::PrestoInt(U64),
-    "u64",
-    deserialize_u64
-);
-//TODO: u64's presto type is i64, it may > i64::max, same as u8, u16, u32
