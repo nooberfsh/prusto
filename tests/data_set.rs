@@ -1,12 +1,12 @@
 #![allow(incomplete_features)]
 #![feature(generic_associated_types)]
 
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
-use std::collections::HashMap;
 
-use serde_json::value::Value;
 use maplit::hashmap;
+use serde_json::value::Value;
 
 use presto::types::DataSet;
 use presto::Column;
@@ -129,6 +129,70 @@ fn test_map() {
                 "bar".to_string() => 2,
             ],
             b: 5,
+        }
+    );
+}
+
+#[test]
+fn test_row() {
+    #[derive(Presto, Eq, PartialEq, Debug, Clone)]
+    struct A {
+        a: B,
+        b: i32,
+    }
+
+    #[derive(Presto, Eq, PartialEq, Debug, Clone)]
+    struct B {
+        x: i32,
+        y: i32,
+    }
+
+    let (s, v) = read("row");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+    assert_eq!(
+        d[0],
+        A {
+            a: B { x: 1, y: 1 },
+            b: 5,
+        }
+    );
+}
+
+#[test]
+fn test_integer() {
+    #[derive(Presto, Eq, PartialEq, Debug, Clone)]
+    struct A {
+        a: i8,
+        b: i16,
+        c: i32,
+        d: i64,
+        e: u64,
+        f: u16,
+        g: u32,
+        h: u8,
+    }
+
+    let (s, v) = read("integer");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+    assert_eq!(
+        d[0],
+        A {
+            a: -4,
+            b: -3,
+            c: -2,
+            d: -1,
+            e: 1,
+            f: 2,
+            g: 3,
+            h: 4,
         }
     );
 }

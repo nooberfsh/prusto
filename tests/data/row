@@ -1,0 +1,80 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "row(x integer,y integer)",
+            "typeSignature": {
+                "rawType": "row",
+                "typeArguments": [
+                    {
+                        "rawType": "integer",
+                        "typeArguments": [],
+                        "literalArguments": [],
+                        "arguments": []
+                    },
+                    {
+                        "rawType": "integer",
+                        "typeArguments": [],
+                        "literalArguments": [],
+                        "arguments": []
+                    }
+                ],
+                "literalArguments": [
+                    "x",
+                    "y"
+                ],
+                "arguments": [
+                    {
+                        "kind": "NAMED_TYPE_SIGNATURE",
+                        "value": {
+                            "fieldName": {
+                                "name": "x",
+                                "delimited": false
+                            },
+                            "typeSignature": {
+                                "rawType": "integer",
+                                "typeArguments": [],
+                                "literalArguments": [],
+                                "arguments": []
+                            }
+                        }
+                    },
+                    {
+                        "kind": "NAMED_TYPE_SIGNATURE",
+                        "value": {
+                            "fieldName": {
+                                "name": "y",
+                                "delimited": false
+                            },
+                            "typeSignature": {
+                                "rawType": "integer",
+                                "typeArguments": [],
+                                "literalArguments": [],
+                                "arguments": []
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "b",
+            "type": "integer",
+            "typeSignature": {
+                "rawType": "integer",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        }
+    ],
+    "data": [
+        [
+            [
+                1,
+                1
+            ],
+            5
+        ]
+    ]
+}

@@ -1,0 +1,96 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "tinyint",
+            "typeSignature": {
+                "rawType": "tinyint",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "b",
+            "type": "smallint",
+            "typeSignature": {
+                "rawType": "smallint",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "c",
+            "type": "integer",
+            "typeSignature": {
+                "rawType": "integer",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "d",
+            "type": "bigint",
+            "typeSignature": {
+                "rawType": "bigint",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "e",
+            "type": "bigint",
+            "typeSignature": {
+                "rawType": "bigint",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "f",
+            "type": "smallint",
+            "typeSignature": {
+                "rawType": "smallint",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "g",
+            "type": "integer",
+            "typeSignature": {
+                "rawType": "integer",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "h",
+            "type": "tinyint",
+            "typeSignature": {
+                "rawType": "tinyint",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        }
+    ],
+    "data": [
+        [
+            -4,
+            -3,
+            -2,
+            -1,
+            1,
+            2,
+            3,
+            4
+        ]
+    ]
+}
