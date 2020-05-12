@@ -112,9 +112,9 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
                 }
 
                 if let Ok(None) = seq.next_element::<String>() {
-                    Err(<_A::Error as ::serde::de::Error>::custom("access seq failed, there are some extra data"))
-                } else {
                     Ok(ret)
+                } else {
+                    Err(<_A::Error as ::serde::de::Error>::custom("access seq failed, there are some extra data"))
                 }
             }
         }

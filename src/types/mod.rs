@@ -14,6 +14,7 @@ pub use number::*;
 pub use option::*;
 pub use string::*;
 pub use vec::*;
+pub use data_set::*;
 
 //mod str;
 //pub use self::str::*;
@@ -99,6 +100,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
 
     match (target, provided) {
         (Option(ty), provided) => extract(ty, provided, data),
+        (Boolean, Boolean) => true,
         (Integer, Integer) => true,
         (Varchar, Varchar) => true,
         (Tuple(t1), Tuple(t2)) => {
@@ -144,6 +146,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
                 true
             }
         }
+        (Array(t1), Array(t2)) => extract(t1, t2, data),
         (Map(t1k, t1v), Map(t2k, t2v)) => extract(t1k, t2k, data) && extract(t1v, t2v, data),
         _ => false,
     }

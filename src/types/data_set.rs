@@ -13,6 +13,10 @@ pub struct DataSet<T: Presto> {
     data: Vec<T>,
 }
 
+impl<T: Presto> DataSet<T> {
+    pub fn into_vec(self) -> Vec<T> { self.data }
+}
+
 impl<T: Presto> Serialize for DataSet<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

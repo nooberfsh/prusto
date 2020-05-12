@@ -1,0 +1,48 @@
+{
+    "columns": [
+        {
+            "name": "prefix",
+            "type": "varchar",
+            "typeSignature": {
+                "rawType": "varchar",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 2147483647
+                    }
+                ]
+            }
+        },
+        {
+            "name": "pay_id",
+            "type": "varchar",
+            "typeSignature": {
+                "rawType": "varchar",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 2147483647
+                    }
+                ]
+            }
+        }
+    ],
+    "data": [
+        [
+            "a",
+            null
+        ],
+        [
+            "b",
+            "Some(b)"
+        ],
+        [
+            "c",
+            null
+        ]
+    ]
+}
