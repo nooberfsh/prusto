@@ -1,0 +1,30 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "boolean",
+            "typeSignature": {
+                "rawType": "boolean",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "b",
+            "type": "boolean",
+            "typeSignature": {
+                "rawType": "boolean",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        }
+    ],
+    "data": [
+        [
+            true,
+            false
+        ]
+    ]
+}

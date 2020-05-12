@@ -243,3 +243,20 @@ fn test_float() {
         }
     );
 }
+
+#[test]
+fn test_bool() {
+    #[derive(Presto, PartialEq, Debug, Clone)]
+    struct A {
+        a: bool,
+        b: bool,
+    }
+
+    let (s, v) = read("boolean");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+    assert_eq!(d[0], A { a: true, b: false });
+}
