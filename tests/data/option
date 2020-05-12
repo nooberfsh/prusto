@@ -1,7 +1,7 @@
 {
     "columns": [
         {
-            "name": "prefix",
+            "name": "a",
             "type": "varchar",
             "typeSignature": {
                 "rawType": "varchar",
@@ -16,7 +16,7 @@
             }
         },
         {
-            "name": "pay_id",
+            "name": "b",
             "type": "varchar",
             "typeSignature": {
                 "rawType": "varchar",

@@ -10,12 +10,6 @@ use presto::types::DataSet;
 use presto::Column;
 use presto::Presto;
 
-#[derive(Presto, Eq, PartialEq, Debug, Clone)]
-struct A {
-    prefix: String,
-    pay_id: Option<String>,
-}
-
 fn read(name: &str) -> (String, Value) {
     let p = "tests/data/".to_string() + name;
     let mut f = File::open(p).unwrap();
@@ -53,6 +47,12 @@ fn split(v: Value) -> Option<(Vec<Column>, Value)> {
 
 #[test]
 fn test_option() {
+    #[derive(Presto, Eq, PartialEq, Debug, Clone)]
+    struct A {
+        a: String,
+        b: Option<String>,
+    }
+
     let (s, v) = read("option");
     let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
     assert_ds(d.clone(), v);
@@ -62,22 +62,45 @@ fn test_option() {
     assert_eq!(
         d[0],
         A {
-            prefix: "a".to_string(),
-            pay_id: None,
+            a: "a".to_string(),
+            b: None,
         }
     );
     assert_eq!(
         d[1],
         A {
-            prefix: "b".to_string(),
-            pay_id: Some("Some(b)".to_string()),
+            a: "b".to_string(),
+            b: Some("Some(b)".to_string()),
         }
     );
     assert_eq!(
         d[2],
         A {
-            prefix: "c".to_string(),
-            pay_id: None,
+            a: "c".to_string(),
+            b: None,
+        }
+    );
+}
+
+#[test]
+fn test_vec() {
+    #[derive(Presto, Eq, PartialEq, Debug, Clone)]
+    struct A {
+        a: Vec<i32>,
+        b: i32,
+    }
+
+    let (s, v) = read("vec");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+    assert_eq!(
+        d[0],
+        A {
+            a: vec![1, 2, 3],
+            b: 5,
         }
     );
 }
