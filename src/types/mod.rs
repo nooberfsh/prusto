@@ -4,9 +4,9 @@ mod float;
 mod integer;
 mod map;
 mod option;
+mod seq;
 mod string;
 pub(self) mod util;
-mod vec;
 
 pub use boolean::*;
 pub use data_set::*;
@@ -15,8 +15,8 @@ pub use integer::*;
 pub use integer::*;
 pub use map::*;
 pub use option::*;
+pub use seq::*;
 pub use string::*;
-pub use vec::*;
 
 //mod str;
 //pub use self::str::*;

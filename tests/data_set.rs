@@ -1,9 +1,10 @@
 #![allow(incomplete_features)]
 #![feature(generic_associated_types)]
 
-use std::collections::HashMap;
+use std::collections::*;
 use std::fs::File;
 use std::io::Read;
+use std::iter::FromIterator;
 
 use maplit::hashmap;
 use serde_json::value::Value;
@@ -85,26 +86,50 @@ fn test_option() {
 }
 
 #[test]
-fn test_vec() {
-    #[derive(Presto, Eq, PartialEq, Debug, Clone)]
+fn test_seq() {
+    #[derive(Presto, Debug, Clone)]
     struct A {
         a: Vec<i32>,
-        b: i32,
+        b: LinkedList<i32>,
+        c: VecDeque<i32>,
     }
 
-    let (s, v) = read("vec");
+    let (s, v) = read("seq");
     let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
     assert_ds(d.clone(), v);
 
-    let d = d.into_vec();
+    let mut d = d.into_vec();
     assert_eq!(d.len(), 1);
-    assert_eq!(
-        d[0],
-        A {
-            a: vec![1, 2, 3],
-            b: 5,
-        }
-    );
+
+    let d = d.pop().unwrap();
+    assert_eq!(d.a, vec![1, 2, 3]);
+    assert_eq!(d.b, LinkedList::from_iter(vec![1, 2, 3]));
+    assert_eq!(d.c, VecDeque::from_iter(vec![1, 2, 3]));
+}
+
+#[test]
+fn test_seq_other() {
+    #[derive(Presto, Debug, Clone)]
+    struct A {
+        a: HashSet<i32>,
+        b: BTreeSet<i32>,
+        c: BinaryHeap<i32>,
+    }
+
+    let (s, _) = read("seq");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+
+    let mut d = d.into_vec();
+    assert_eq!(d.len(), 1);
+
+    let mut d = d.pop().unwrap();
+    assert_eq!(d.a, HashSet::from_iter(vec![1, 2, 3]));
+    assert_eq!(d.b, BTreeSet::from_iter(vec![1, 2, 3]));
+
+    assert_eq!(d.c.pop(), Some(3));
+    assert_eq!(d.c.pop(), Some(2));
+    assert_eq!(d.c.pop(), Some(1));
+    assert_eq!(d.c.pop(), None);
 }
 
 #[test]
