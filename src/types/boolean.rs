@@ -1,6 +1,4 @@
-use std::fmt;
-
-use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
+use serde::de::{Deserialize, DeserializeSeed, Deserializer};
 
 use super::{Context, Presto, PrestoMapKey, PrestoTy};
 
@@ -29,26 +27,12 @@ impl PrestoMapKey for bool {}
 
 pub struct BoolSeed;
 
-impl<'de> Visitor<'de> for BoolSeed {
-    type Value = bool;
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("bool")
-    }
-
-    fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Ok(value)
-    }
-}
-
 impl<'de> DeserializeSeed<'de> for BoolSeed {
     type Value = bool;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_bool(self)
+        Self::Value::deserialize(deserializer)
     }
 }
