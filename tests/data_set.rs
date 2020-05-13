@@ -5,11 +5,12 @@ use std::collections::*;
 use std::fs::File;
 use std::io::Read;
 use std::iter::FromIterator;
+use std::str::FromStr;
 
 use maplit::{btreemap, hashmap};
 use serde_json::value::Value;
 
-use presto::types::DataSet;
+use presto::types::{DataSet, Decimal};
 use presto::Column;
 use presto::Presto;
 
@@ -264,4 +265,24 @@ fn test_bool() {
     let d = d.into_vec();
     assert_eq!(d.len(), 1);
     assert_eq!(d[0], A { a: true, b: false });
+}
+
+#[test]
+fn test_decimal() {
+    #[derive(Presto, PartialEq, Debug, Clone)]
+    struct A {
+        a: Decimal<38, 10>,
+    }
+
+    let (s, v) = read("decimal");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+
+    let s = "1123412341234123412341234.2222222220";
+    let a = Decimal::from_str(s).unwrap();
+
+    assert_eq!(d[0], A { a });
 }

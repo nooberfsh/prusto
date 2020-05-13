@@ -1,0 +1,28 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "decimal(38,10)",
+            "typeSignature": {
+                "rawType": "decimal",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 38
+                    },
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 10
+                    }
+                ]
+            }
+        }
+    ],
+    "data": [
+        [
+            "1123412341234123412341234.2222222220"
+        ]
+    ]
+}

@@ -1,5 +1,6 @@
 mod boolean;
 mod data_set;
+mod decimal;
 mod float;
 mod integer;
 mod map;
@@ -10,6 +11,7 @@ pub(self) mod util;
 
 pub use boolean::*;
 pub use data_set::*;
+pub use decimal::*;
 pub use float::*;
 pub use integer::*;
 pub use integer::*;
@@ -41,6 +43,7 @@ pub enum Error {
     InvalidPrestoType,
     InvalidColumn,
     InvalidTypeSignature,
+    ParseFailed(String),
 }
 
 pub trait Presto {
@@ -101,6 +104,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
     use PrestoTy::*;
 
     match (target, provided) {
+        (Decimal(p1, s1), Decimal(p2, s2)) if p1 == p2 && s1 == s2 => true,
         (Option(ty), provided) => extract(ty, provided, data),
         (Boolean, Boolean) => true,
         (PrestoInt(_), PrestoInt(_)) => true,
@@ -166,6 +170,7 @@ pub enum PrestoTy {
     Row(Vec<(String, PrestoTy)>),
     Array(Box<PrestoTy>),
     Map(Box<PrestoTy>, Box<PrestoTy>),
+    Decimal(usize, usize),
 }
 
 #[derive(Clone, Debug)]
@@ -192,6 +197,19 @@ impl PrestoTy {
         use PrestoInt::*;
 
         let ty = match sig.raw_type {
+            RawPrestoTy::Decimal if sig.arguments.len() == 2 => {
+                let s_sig = sig.arguments.pop().unwrap();
+                let p_sig = sig.arguments.pop().unwrap();
+                if let (
+                    ClientTypeSignatureParameter::LongLiteral(p),
+                    ClientTypeSignatureParameter::LongLiteral(s),
+                ) = (p_sig, s_sig)
+                {
+                    PrestoTy::Decimal(p as usize, s as usize)
+                } else {
+                    return Err(Error::InvalidTypeSignature);
+                }
+            }
             RawPrestoTy::Boolean => PrestoTy::Boolean,
             RawPrestoTy::TinyInt => PrestoTy::PrestoInt(I8),
             RawPrestoTy::SmallInt => PrestoTy::PrestoInt(I16),
@@ -287,6 +305,10 @@ impl PrestoTy {
         let raw_ty = self.raw_type();
 
         let params = match self {
+            Decimal(p, s) => vec![
+                ClientTypeSignatureParameter::LongLiteral(p as u64),
+                ClientTypeSignatureParameter::LongLiteral(s as u64),
+            ],
             Option(t) => return t.into_type_signature(),
             Boolean => vec![],
             PrestoInt(_) => vec![],
@@ -326,6 +348,7 @@ impl PrestoTy {
         use PrestoTy::*;
 
         match self {
+            Decimal(p, s) => format!("{}({},{})", RawPrestoTy::Decimal.to_str(), p, s).into(),
             Option(t) => t.full_type(),
             Boolean => RawPrestoTy::Boolean.to_str().into(),
             PrestoInt(ty) => ty.raw_type().to_str().into(),
@@ -360,6 +383,7 @@ impl PrestoTy {
         use PrestoTy::*;
 
         match self {
+            Decimal(_, _) => RawPrestoTy::Decimal,
             Option(ty) => ty.raw_type(),
             Boolean => RawPrestoTy::Boolean,
             PrestoInt(ty) => ty.raw_type(),
