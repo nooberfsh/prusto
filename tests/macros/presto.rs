@@ -60,7 +60,19 @@ fn test_generic() {
     assert_eq!(g.value(), (&"gen".to_string(), (&"foo".to_string(), &10)));
 }
 
+fn test_wrap() {
+    #[derive(Presto)]
+    struct A {
+        a: u32,
+    }
+
+    let a = A {a: 1};
+    assert_eq!(a.value(), (&1,));
+}
+
 fn main() {
     test_simple();
     test_nested();
+    test_generic();
+    test_wrap();
 }

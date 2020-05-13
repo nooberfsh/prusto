@@ -46,11 +46,11 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
     let impl_trait_block = quote! {
 
         impl #impl_generics ::presto::types::Presto for #name #ty_generics #where_clause {
-            type ValueType<'_a> = ( #(<#types as ::presto::types::Presto>::ValueType<'_a>),* );
+            type ValueType<'_a> = ( #(<#types as ::presto::types::Presto>::ValueType<'_a>, )* );
             type Seed<'_a, '_de> = #seed_name #seed_ty_generics;
 
             fn value(&self) -> Self::ValueType<'_>  {
-                ( #(self.#keys.value()),* )
+                ( #(self.#keys.value(), )* )
             }
 
             fn ty() -> ::presto::types::PrestoTy {
