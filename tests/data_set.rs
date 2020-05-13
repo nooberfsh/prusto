@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::Read;
 use std::iter::FromIterator;
 
-use maplit::hashmap;
+use maplit::{btreemap, hashmap};
 use serde_json::value::Value;
 
 use presto::types::DataSet;
@@ -137,7 +137,8 @@ fn test_map() {
     #[derive(Presto, Eq, PartialEq, Debug, Clone)]
     struct A {
         a: HashMap<String, i32>,
-        b: i32,
+        b: BTreeMap<i32, i32>,
+        c: i32,
     }
 
     let (s, v) = read("map");
@@ -153,7 +154,11 @@ fn test_map() {
                 "foo".to_string() => 1,
                 "bar".to_string() => 2,
             ],
-            b: 5,
+            b: btreemap![
+                 1 => 1,
+                 2 => 2,
+            ],
+            c: 5,
         }
     );
 }

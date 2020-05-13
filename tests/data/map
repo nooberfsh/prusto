@@ -54,6 +54,48 @@
         },
         {
             "name": "b",
+            "type": "map(integer,integer)",
+            "typeSignature": {
+                "rawType": "map",
+                "typeArguments": [
+                    {
+                        "rawType": "integer",
+                        "typeArguments": [],
+                        "literalArguments": [],
+                        "arguments": []
+                    },
+                    {
+                        "rawType": "integer",
+                        "typeArguments": [],
+                        "literalArguments": [],
+                        "arguments": []
+                    }
+                ],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "TYPE_SIGNATURE",
+                        "value": {
+                            "rawType": "integer",
+                            "typeArguments": [],
+                            "literalArguments": [],
+                            "arguments": []
+                        }
+                    },
+                    {
+                        "kind": "TYPE_SIGNATURE",
+                        "value": {
+                            "rawType": "integer",
+                            "typeArguments": [],
+                            "literalArguments": [],
+                            "arguments": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "c",
             "type": "integer",
             "typeSignature": {
                 "rawType": "integer",
@@ -68,6 +110,10 @@
             {
                 "bar": 2,
                 "foo": 1
+            },
+            {
+                "1": 1,
+                "2": 2
             },
             5
         ]
