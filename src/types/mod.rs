@@ -43,7 +43,7 @@ pub enum Error {
     InvalidPrestoType,
     InvalidColumn,
     InvalidTypeSignature,
-    ParseFailed(String),
+    ParseDecimalFailed(String),
 }
 
 pub trait Presto {

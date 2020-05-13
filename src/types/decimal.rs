@@ -21,7 +21,7 @@ impl<const P: usize, const S: usize> FromStr for Decimal<P, S> {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         bigdecimal::BigDecimal::from_str(s)
             .map(|inner| Self { inner })
-            .map_err(|e| Error::ParseFailed(format!("{}", e)))
+            .map_err(|e| Error::ParseDecimalFailed(format!("{}", e)))
     }
 }
 
@@ -67,6 +67,7 @@ mod tests {
     fn smoke() {
         let data = "1123412341234123412341234.2222222220";
         let d = Decimal::<40, 10>::from_str(data).unwrap();
-        assert_eq!(d, data);
+        let s = format!("{}", d.into_bigdecimal());
+        assert_eq!(s, data);
     }
 }
