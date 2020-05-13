@@ -159,7 +159,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PrestoTy {
     Option(Box<PrestoTy>),
     Boolean,
@@ -173,7 +173,7 @@ pub enum PrestoTy {
     Decimal(usize, usize),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PrestoInt {
     I8,
     I16,
@@ -185,7 +185,7 @@ pub enum PrestoInt {
     U64,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PrestoFloat {
     F32,
     F64,
@@ -285,15 +285,21 @@ impl PrestoTy {
         Ok(ty)
     }
 
+    pub fn from_column(column: Column) -> Result<(String, Self), Error> {
+        let name = column.name;
+        if let Some(sig) = column.type_signature {
+            let ty = Self::from_type_signature(sig)?;
+            Ok((name, ty))
+        } else {
+            Err(Error::InvalidColumn)
+        }
+    }
+
     pub fn from_columns(columns: Vec<Column>) -> Result<Self, Error> {
         let mut ret = Vec::with_capacity(columns.len());
         for column in columns {
-            if let Some(sig) = column.type_signature {
-                let ty = Self::from_type_signature(sig)?;
-                ret.push((column.name, ty));
-            } else {
-                return Err(Error::InvalidColumn);
-            }
+            let (name, ty) = Self::from_column(column)?;
+            ret.push((name, ty));
         }
 
         Ok(PrestoTy::Row(ret))

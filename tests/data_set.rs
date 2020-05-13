@@ -11,8 +11,8 @@ use maplit::{btreemap, hashmap};
 use serde_json::value::Value;
 
 use presto::types::{DataSet, Decimal};
-use presto::Column;
 use presto::Presto;
+use presto::{Column, RawDataSet};
 
 fn read(name: &str) -> (String, Value) {
     let p = "tests/data/".to_string() + name;
@@ -285,4 +285,32 @@ fn test_decimal() {
     let a = Decimal::from_str(s).unwrap();
 
     assert_eq!(d[0], A { a });
+}
+
+#[test]
+fn test_raw_data_set() {
+    #[derive(Presto, PartialEq, Debug, Clone)]
+    struct A {
+        a: String,
+        b: i32,
+        c: bool,
+        d: Vec<i32>,
+        e: B,
+    }
+
+    #[derive(Presto, PartialEq, Debug, Clone)]
+    struct B {
+        x: i64,
+        y: f64,
+    }
+
+    let (s, v) = read("complex");
+    let (_, v) = split(v).unwrap();
+    let d = serde_json::from_str::<RawDataSet>(&s).unwrap();
+
+    let (ty, data) = d.split();
+    let data = serde_json::to_value(data).unwrap();
+
+    assert_eq!(A::ty(), ty);
+    assert_eq!(v, data);
 }

@@ -1,0 +1,139 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "varchar(3)",
+            "typeSignature": {
+                "rawType": "varchar",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 3
+                    }
+                ]
+            }
+        },
+        {
+            "name": "b",
+            "type": "integer",
+            "typeSignature": {
+                "rawType": "integer",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "c",
+            "type": "boolean",
+            "typeSignature": {
+                "rawType": "boolean",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "d",
+            "type": "array(integer)",
+            "typeSignature": {
+                "rawType": "array",
+                "typeArguments": [
+                    {
+                        "rawType": "integer",
+                        "typeArguments": [],
+                        "literalArguments": [],
+                        "arguments": []
+                    }
+                ],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "TYPE_SIGNATURE",
+                        "value": {
+                            "rawType": "integer",
+                            "typeArguments": [],
+                            "literalArguments": [],
+                            "arguments": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "e",
+            "type": "row(x bigint,y double)",
+            "typeSignature": {
+                "rawType": "row",
+                "typeArguments": [
+                    {
+                        "rawType": "bigint",
+                        "typeArguments": [],
+                        "literalArguments": [],
+                        "arguments": []
+                    },
+                    {
+                        "rawType": "double",
+                        "typeArguments": [],
+                        "literalArguments": [],
+                        "arguments": []
+                    }
+                ],
+                "literalArguments": [
+                    "x",
+                    "y"
+                ],
+                "arguments": [
+                    {
+                        "kind": "NAMED_TYPE_SIGNATURE",
+                        "value": {
+                            "fieldName": {
+                                "name": "x",
+                                "delimited": false
+                            },
+                            "typeSignature": {
+                                "rawType": "bigint",
+                                "typeArguments": [],
+                                "literalArguments": [],
+                                "arguments": []
+                            }
+                        }
+                    },
+                    {
+                        "kind": "NAMED_TYPE_SIGNATURE",
+                        "value": {
+                            "fieldName": {
+                                "name": "y",
+                                "delimited": false
+                            },
+                            "typeSignature": {
+                                "rawType": "double",
+                                "typeArguments": [],
+                                "literalArguments": [],
+                                "arguments": []
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "data": [
+        [
+            "abc",
+            10,
+            true,
+            [
+                1,
+                2,
+                3
+            ],
+            [
+                1,
+                1.1
+            ]
+        ]
+    ]
+}
