@@ -1,0 +1,81 @@
+{
+    "id": "20200514_063907_02437_mgdh8",
+    "infoUri": "http://localhost:11032/ui/query.html?20200514_063907_02437_mgdh8",
+    "stats": {
+        "state": "FAILED",
+        "queued": false,
+        "scheduled": false,
+        "nodes": 0,
+        "totalSplits": 0,
+        "queuedSplits": 0,
+        "runningSplits": 0,
+        "completedSplits": 0,
+        "cpuTimeMillis": 0,
+        "wallTimeMillis": 0,
+        "queuedTimeMillis": 0,
+        "elapsedTimeMillis": 0,
+        "processedRows": 0,
+        "processedBytes": 0,
+        "peakMemoryBytes": 0,
+        "spilledBytes": 0
+    },
+    "error": {
+        "message": "line 1:17: mismatched input 's'. Expecting: ',', 'EXCEPT', 'FETCH', 'FROM', 'GROUP', 'HAVING', 'INTERSECT', 'LIMIT', 'OFFSET', 'ORDER', 'UNION', 'WHERE', <EOF>",
+        "errorCode": 1,
+        "errorName": "SYNTAX_ERROR",
+        "errorType": "USER_ERROR",
+        "errorLocation": {
+            "lineNumber": 1,
+            "columnNumber": 17
+        },
+        "failureInfo": {
+            "type": "io.prestosql.sql.parser.ParsingException",
+            "message": "line 1:17: mismatched input 's'. Expecting: ',', 'EXCEPT', 'FETCH', 'FROM', 'GROUP', 'HAVING', 'INTERSECT', 'LIMIT', 'OFFSET', 'ORDER', 'UNION', 'WHERE', <EOF>",
+            "cause": {
+                "type": "org.antlr.v4.runtime.InputMismatchException",
+                "suppressed": [],
+                "stack": [
+                    "io.prestosql.sql.parser.SqlParser$2.recoverInline(SqlParser.java:137)",
+                    "org.antlr.v4.runtime.Parser.match(Parser.java:206)",
+                    "io.prestosql.sql.parser.SqlBaseParser.singleStatement(SqlBaseParser.java:243)",
+                    "io.prestosql.sql.parser.SqlParser.invokeParser(SqlParser.java:160)",
+                    "io.prestosql.sql.parser.SqlParser.createStatement(SqlParser.java:96)",
+                    "io.prestosql.execution.QueryPreparer.prepareQuery(QueryPreparer.java:55)",
+                    "io.prestosql.execution.SqlQueryManager.createQueryInternal(SqlQueryManager.java:335)",
+                    "io.prestosql.execution.SqlQueryManager.lambda$createQuery$4(SqlQueryManager.java:301)",
+                    "io.prestosql.$gen.Presto_311____20200513_073814_1.run(Unknown Source)",
+                    "java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)",
+                    "java.util.concurrent.FutureTask.run(FutureTask.java:266)",
+                    "java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)",
+                    "java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)",
+                    "java.lang.Thread.run(Thread.java:748)"
+                ]
+            },
+            "suppressed": [],
+            "stack": [
+                "io.prestosql.sql.parser.ErrorHandler.syntaxError(ErrorHandler.java:110)",
+                "org.antlr.v4.runtime.ProxyErrorListener.syntaxError(ProxyErrorListener.java:41)",
+                "org.antlr.v4.runtime.Parser.notifyErrorListeners(Parser.java:544)",
+                "org.antlr.v4.runtime.DefaultErrorStrategy.reportInputMismatch(DefaultErrorStrategy.java:327)",
+                "org.antlr.v4.runtime.DefaultErrorStrategy.reportError(DefaultErrorStrategy.java:139)",
+                "io.prestosql.sql.parser.SqlBaseParser.singleStatement(SqlBaseParser.java:248)",
+                "io.prestosql.sql.parser.SqlParser.invokeParser(SqlParser.java:160)",
+                "io.prestosql.sql.parser.SqlParser.createStatement(SqlParser.java:96)",
+                "io.prestosql.execution.QueryPreparer.prepareQuery(QueryPreparer.java:55)",
+                "io.prestosql.execution.SqlQueryManager.createQueryInternal(SqlQueryManager.java:335)",
+                "io.prestosql.execution.SqlQueryManager.lambda$createQuery$4(SqlQueryManager.java:301)",
+                "io.prestosql.$gen.Presto_311____20200513_073814_1.run(Unknown Source)",
+                "java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)",
+                "java.util.concurrent.FutureTask.run(FutureTask.java:266)",
+                "java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)",
+                "java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)",
+                "java.lang.Thread.run(Thread.java:748)"
+            ],
+            "errorLocation": {
+                "lineNumber": 1,
+                "columnNumber": 17
+            }
+        }
+    },
+    "warnings": []
+}

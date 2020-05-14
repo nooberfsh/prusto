@@ -10,11 +10,13 @@ use super::util::SerializeIterator;
 use super::{Context, Presto, PrestoTy, VecSeed};
 use crate::models::Column;
 
+#[derive(Debug)]
 pub struct DataSet<T: Presto> {
     data: Vec<T>,
 }
 
 // TODO: do we need some basic check when deserialize
+#[derive(Debug, Clone)]
 pub struct RawDataSet {
     columns: Vec<(String, PrestoTy)>,
     data: Vec<Vec<Value>>,

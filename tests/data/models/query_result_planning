@@ -1,0 +1,24 @@
+{
+    "id": "20200514_063813_02434_mgdh8",
+    "infoUri": "http://localhost:11032/ui/query.html?20200514_063813_02434_mgdh8",
+    "nextUri": "http://localhost:11032/v1/statement/20200514_063813_02434_mgdh8/xf7e62a5d1e1a4bd49f9341379c477ed1/2",
+    "stats": {
+        "state": "PLANNING",
+        "queued": false,
+        "scheduled": false,
+        "nodes": 0,
+        "totalSplits": 0,
+        "queuedSplits": 0,
+        "runningSplits": 0,
+        "completedSplits": 0,
+        "cpuTimeMillis": 0,
+        "wallTimeMillis": 0,
+        "queuedTimeMillis": 5,
+        "elapsedTimeMillis": 5,
+        "processedRows": 0,
+        "processedBytes": 0,
+        "peakMemoryBytes": 0,
+        "spilledBytes": 0
+    },
+    "warnings": []
+}

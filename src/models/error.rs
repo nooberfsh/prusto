@@ -4,7 +4,7 @@ use serde::Deserialize;
 #[serde(rename_all = "camelCase")]
 pub struct QueryError {
     pub message: String,
-    pub sql_state: String,
+    pub sql_state: Option<String>,
     pub error_code: i32,
     pub error_name: String,
     pub error_type: String,
