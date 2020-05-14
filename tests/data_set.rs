@@ -15,7 +15,7 @@ use presto::Presto;
 use presto::{Column, RawDataSet};
 
 fn read(name: &str) -> (String, Value) {
-    let p = "tests/data/".to_string() + name;
+    let p = "tests/data/types/".to_string() + name;
     let mut f = File::open(p).unwrap();
     let mut buf = String::new();
     f.read_to_string(&mut buf).unwrap();
