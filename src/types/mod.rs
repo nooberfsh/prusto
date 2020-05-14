@@ -179,10 +179,6 @@ pub enum PrestoInt {
     I16,
     I32,
     I64,
-    U8,
-    U16,
-    U32,
-    U64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -411,10 +407,6 @@ impl PrestoInt {
             I16 => RawPrestoTy::SmallInt,
             I32 => RawPrestoTy::Integer,
             I64 => RawPrestoTy::BigInt,
-            U8 => RawPrestoTy::TinyInt,
-            U16 => RawPrestoTy::SmallInt,
-            U32 => RawPrestoTy::Integer,
-            U64 => RawPrestoTy::BigInt,
         }
     }
 }

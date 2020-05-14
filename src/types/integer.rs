@@ -48,7 +48,7 @@ gen_int!(i32, I32Seed, PrestoTy::PrestoInt(I32));
 gen_int!(i64, I64Seed, PrestoTy::PrestoInt(I64));
 
 //TODO: u64's presto type is i64, it may > i64::max, same as u8, u16, u32
-gen_int!(u8, U8Seed, PrestoTy::PrestoInt(U8));
-gen_int!(u16, U16Seed, PrestoTy::PrestoInt(U16));
-gen_int!(u32, U32Seed, PrestoTy::PrestoInt(U32));
-gen_int!(u64, U64Seed, PrestoTy::PrestoInt(U64));
+gen_int!(u8, U8Seed, PrestoTy::PrestoInt(I8));
+gen_int!(u16, U16Seed, PrestoTy::PrestoInt(I16));
+gen_int!(u32, U32Seed, PrestoTy::PrestoInt(I32));
+gen_int!(u64, U64Seed, PrestoTy::PrestoInt(I64));
