@@ -3,10 +3,13 @@
 #![feature(generic_associated_types)]
 #![feature(const_generics)]
 
+pub mod client;
 pub mod error;
-mod models;
+pub mod models;
 pub mod types;
 
+pub use client::*;
+pub use error::*;
 pub use macros::*;
 pub use models::*;
 pub use types::*;
