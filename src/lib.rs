@@ -7,6 +7,8 @@ pub mod client;
 pub mod error;
 pub mod models;
 pub mod types;
+pub mod transaction;
+pub mod constants;
 
 pub use client::*;
 pub use error::*;
