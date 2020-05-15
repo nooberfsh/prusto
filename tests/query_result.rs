@@ -50,6 +50,17 @@ fn test_raw_finished() {
 }
 
 #[test]
+fn test_raw_empty() {
+    let s = read("query_result_empty");
+    let d = serde_json::from_str::<RawQueryResult>(&s).unwrap();
+
+    assert!(d.next_uri.is_none());
+    assert!(d.data_set.is_some());
+    assert!(d.data_set.unwrap().is_empty());
+    assert!(d.error.is_none());
+}
+
+#[test]
 fn test_raw_failed() {
     let s = read("query_result_failed");
     let d = serde_json::from_str::<RawQueryResult>(&s).unwrap();
@@ -117,4 +128,15 @@ fn test_failed() {
     assert!(d.next_uri.is_none());
     assert!(d.data_set.is_none());
     assert!(d.error.is_some());
+}
+
+#[test]
+fn test_empty() {
+    let s = read("query_result_empty");
+    let d = serde_json::from_str::<QueryResult<A>>(&s).unwrap();
+
+    assert!(d.next_uri.is_none());
+    assert!(d.data_set.is_some());
+    assert!(d.data_set.unwrap().is_empty());
+    assert!(d.error.is_none());
 }

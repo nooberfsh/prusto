@@ -26,6 +26,14 @@ impl<T: Presto> DataSet<T> {
     pub fn into_vec(self) -> Vec<T> {
         self.data
     }
+
+    pub fn merge(&mut self, other: DataSet<T>) {
+        self.data.extend(other.data)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
 }
 
 impl<T: Presto + Clone> Clone for DataSet<T> {
@@ -47,10 +55,23 @@ impl RawDataSet {
         &self.columns
     }
 
+    pub fn merge(&mut self, other: RawDataSet) -> bool {
+        if self.columns == other.columns {
+            self.data.extend(other.data);
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn split(self) -> (PrestoTy, Vec<Vec<Value>>) {
         let ty = PrestoTy::Row(self.columns);
         let data = self.data;
         (ty, data)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
     }
 }
 
@@ -164,7 +185,8 @@ impl<'de, T: Presto> Deserialize<'de> for DataSet<T> {
                 let data = if let Some(Field::Data) = map.next_key()? {
                     map.next_value_seed(seed)?
                 } else {
-                    return Err(de::Error::missing_field("data"));
+                    // it is empty when there is no data
+                    vec![]
                 };
 
                 match map.next_key::<Field>()? {
@@ -218,7 +240,8 @@ impl<'de> Deserialize<'de> for RawDataSet {
                 let data = if let Some(Field::Data) = map.next_key()? {
                     map.next_value()?
                 } else {
-                    return Err(de::Error::missing_field("data"));
+                    // it is empty when there is no data
+                    vec![]
                 };
 
                 match map.next_key::<Field>()? {
