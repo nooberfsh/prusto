@@ -1,11 +1,13 @@
-use reqwest::header::HeaderMap;
 use http::uri::Scheme;
-use reqwest::Url;
+use reqwest::header::HeaderMap;
 use reqwest::header::HeaderValue;
+use reqwest::Url;
 
-use crate::{DataSet, Presto, RawDataSet, Result ,Error};
-use crate::transaction::TransactionId;
 use crate::constants::*;
+use crate::error::{Error, Result};
+use crate::transaction::TransactionId;
+use crate::{DataSet, Presto, QueryResult, RawDataSet, RawQueryResult};
+use serde::de::DeserializeOwned;
 
 // TODO: allow_redirects proxies  request_timeout handle_retry max_attempts
 
@@ -14,9 +16,7 @@ pub enum Auth {
     Basic(String, String),
 }
 
-pub struct SessionProperties {
-
-}
+pub struct SessionProperties {}
 
 impl SessionProperties {
     fn to_string(&self) -> String {
@@ -45,9 +45,9 @@ pub struct ClientBuilder {
 }
 
 impl ClientBuilder {
-    pub fn new(user: String, host: String) -> Self {
+    pub fn new(user: impl ToString, host: impl ToString) -> Self {
         let session = ClientSession {
-            user,
+            user: user.to_string(),
             source: "presto-python-client".to_string(),
             catalog: None,
             schema: None,
@@ -56,12 +56,12 @@ impl ClientBuilder {
             transaction_id: None,
         };
         Self {
-            host,
             session,
-            port : 8080, // default
-            http_scheme: Scheme::Http, // default is http
+            host: host.to_string(),
+            port: 8080,                // default
+            http_scheme: Scheme::HTTP, // default is http
             auth: None,
-            max_attempts: 3, // default
+            max_attempts: 3,       // default
             request_timeout: 30.0, //default
         }
     }
@@ -71,18 +71,18 @@ impl ClientBuilder {
         self
     }
 
-    pub fn source(mut self, s: String) -> Self {
-        self.session.source = s;
+    pub fn source(mut self, s: impl ToString) -> Self {
+        self.session.source = s.to_string();
         self
     }
 
-    pub fn catalog(mut self, s: String) -> Self {
-        self.session.catalog = Some(s);
+    pub fn catalog(mut self, s: impl ToString) -> Self {
+        self.session.catalog = Some(s.to_string());
         self
     }
 
-    pub fn schema(mut self, s: String) -> Self {
-        self.session.catalog = Some(s);
+    pub fn schema(mut self, s: impl ToString) -> Self {
+        self.session.catalog = Some(s.to_string());
         self
     }
 
@@ -125,11 +125,11 @@ impl ClientBuilder {
         let http_headers = self.headers()?;
         if let Some(_) = &self.auth {
             if self.http_scheme == Scheme::HTTP {
-                return Err(Error::BasicAuthWithHttp)
+                return Err(Error::BasicAuthWithHttp);
             }
         }
         let cli = Client {
-            http: reqwest::Client::new(),
+            client: reqwest::Client::new(),
             session: self.session,
             auth: self.auth,
             http_headers,
@@ -140,27 +140,45 @@ impl ClientBuilder {
     }
 
     fn statement_url(&self) -> Url {
-        let s = format!("{}://{host}:{port}/v1/statement", self.http_scheme, self.host, self.port);
+        let s = format!(
+            "{}://{}:{}/v1/statement",
+            self.http_scheme, self.host, self.port
+        );
         Url::parse(&s).unwrap()
     }
 
     fn headers(&self) -> Result<HeaderMap> {
-        use  Error::*;
+        use Error::*;
 
         let mut headers = HeaderMap::new();
-        if  let Some(s )  = &self.session.catalog {
-            headers.insert(HEADER_CATALOG, HeaderValue::from_str(s).map_err(|_| InvalidCatalog)?);
+        if let Some(s) = &self.session.catalog {
+            headers.insert(
+                HEADER_CATALOG,
+                HeaderValue::from_str(s).map_err(|_| InvalidCatalog)?,
+            );
         }
-        if  let Some(s )  = &self.session.schema {
-            headers.insert(HEADER_SCHEMA, HeaderValue::from_str(s).map_err(|_| InvalidSchema)?);
+        if let Some(s) = &self.session.schema {
+            headers.insert(
+                HEADER_SCHEMA,
+                HeaderValue::from_str(s).map_err(|_| InvalidSchema)?,
+            );
         }
 
-        headers.insert(HEADER_SOURCE, HeaderValue::from_str(&self.session.source).map_err(|_| InvalidSource)?);
+        headers.insert(
+            HEADER_SOURCE,
+            HeaderValue::from_str(&self.session.source).map_err(|_| InvalidSource)?,
+        );
 
-        headers.insert(HEADER_USER, HeaderValue::from_str(&self.session.user).map_err(|_| InvalidUser)?);
+        headers.insert(
+            HEADER_USER,
+            HeaderValue::from_str(&self.session.user).map_err(|_| InvalidUser)?,
+        );
 
         if let Some(s) = &self.session.session_properties {
-            headers.insert(HEADER_USER, HeaderValue::from_str(&s.to_string()).map_err(|_| InvalidProperties)?);
+            headers.insert(
+                HEADER_USER,
+                HeaderValue::from_str(&s.to_string()).map_err(|_| InvalidProperties)?,
+            );
         }
 
         if let Some(d) = &self.session.transaction_id {
@@ -171,7 +189,7 @@ impl ClientBuilder {
         if let Some(d) = &self.session.http_headers {
             for (k, v) in d {
                 if let Some(_) = headers.insert(k, v.clone()) {
-                    return Err(Error::DuplicateHeaderk.clone())
+                    return Err(Error::DuplicateHeader(k.clone()));
                 }
             }
         }
@@ -181,32 +199,95 @@ impl ClientBuilder {
 }
 
 pub struct Client {
-    http: reqwest::Client,
+    client: reqwest::Client,
     session: ClientSession,
     auth: Option<Auth>,
     http_headers: HeaderMap,
     statement_url: Url,
 }
 
+macro_rules! try_get {
+    ($res:expr) => {
+        if let Some(e) = $res.error {
+            return Err(Error::QueryError(e));
+        } else {
+            $res.data_set
+        }
+    };
+}
+
 impl Client {
-    pub async fn get_raw_data_set(&self, sql: &str) -> Result<RawDataSet> {
-        let req = self.client.post(self.statement_url.clone())
+    pub async fn get_raw_data_set(&self, sql: String) -> Result<RawDataSet> {
+        let res = self.get::<RawQueryResult>(sql).await?;
+        let mut ret = try_get!(res);
+
+        let mut next = res.next_uri;
+        while let Some(url) = &next {
+            let res = self.get_next::<RawQueryResult>(&url).await?;
+            next = res.next_uri;
+            if let Some(d) = try_get!(res) {
+                match &mut ret {
+                    Some(ret) => {
+                        if !ret.merge(d) {
+                            return Err(Error::InconsistentData);
+                        }
+                    }
+                    None => ret = Some(d),
+                }
+            }
+        }
+
+        if let Some(d) = ret {
+            Ok(d)
+        } else {
+            Err(Error::EmptyData)
+        }
+    }
+
+    pub async fn get_data_set<T: Presto>(&self, sql: String) -> Result<DataSet<T>> {
+        let res = self.get::<QueryResult<T>>(sql).await?;
+        let mut ret = try_get!(res);
+
+        let mut next = res.next_uri;
+        while let Some(url) = &next {
+            let res = self.get_next::<QueryResult<T>>(&url).await?;
+            next = res.next_uri;
+            if let Some(d) = try_get!(res) {
+                match &mut ret {
+                    Some(ret) => ret.merge(d),
+                    None => ret = Some(d),
+                }
+            }
+        }
+
+        if let Some(d) = ret {
+            Ok(d)
+        } else {
+            Err(Error::EmptyData)
+        }
+    }
+
+    async fn get<T: DeserializeOwned>(&self, sql: String) -> Result<T> {
+        let req = self
+            .client
+            .post(self.statement_url.clone())
             .headers(self.http_headers.clone())
-        .body(sql);
+            .body(sql);
 
         let req = if let Some(auth) = self.auth.as_ref() {
             match auth {
-                Auth::Basic(u, p) => req.basic_auth(u, p),
+                Auth::Basic(u, p) => req.basic_auth(u, Some(p)),
             }
         } else {
             req
         };
 
-
-
+        let data = req.send().await?.json::<T>().await?;
+        Ok(data)
     }
 
-    pub async fn get_data_set<T: Presto + 'static>(&self, sql: &str) -> Result<DataSet<T>> {
-        todo!()
+    async fn get_next<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
+        let data = self.client.get(url).send().await?.json::<T>().await?;
+        Ok(data)
     }
 }

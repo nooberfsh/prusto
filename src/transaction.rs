@@ -3,7 +3,7 @@ pub enum TransactionId {
     NoTransaction,
     StartTransaction,
     RollBack,
-    Commit
+    Commit,
 }
 
 impl TransactionId {

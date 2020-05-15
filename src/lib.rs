@@ -4,14 +4,13 @@
 #![feature(const_generics)]
 
 pub mod client;
+pub mod constants;
 pub mod error;
 pub mod models;
-pub mod types;
 pub mod transaction;
-pub mod constants;
+pub mod types;
 
 pub use client::*;
-pub use error::*;
 pub use macros::*;
 pub use models::*;
 pub use types::*;

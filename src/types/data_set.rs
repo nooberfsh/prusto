@@ -27,12 +27,12 @@ impl<T: Presto> DataSet<T> {
         self.data
     }
 
-    pub fn merge(&mut self, other: DataSet<T>) {
-        self.data.extend(other.data)
-    }
-
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
+    }
+
+    pub(crate) fn merge(&mut self, other: DataSet<T>) {
+        self.data.extend(other.data)
     }
 }
 
@@ -55,15 +55,6 @@ impl RawDataSet {
         &self.columns
     }
 
-    pub fn merge(&mut self, other: RawDataSet) -> bool {
-        if self.columns == other.columns {
-            self.data.extend(other.data);
-            true
-        } else {
-            false
-        }
-    }
-
     pub fn split(self) -> (PrestoTy, Vec<Vec<Value>>) {
         let ty = PrestoTy::Row(self.columns);
         let data = self.data;
@@ -72,6 +63,15 @@ impl RawDataSet {
 
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
+    }
+
+    pub(crate) fn merge(&mut self, other: RawDataSet) -> bool {
+        if self.columns == other.columns {
+            self.data.extend(other.data);
+            true
+        } else {
+            false
+        }
     }
 }
 
