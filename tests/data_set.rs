@@ -12,7 +12,7 @@ use serde_json::value::Value;
 
 use presto::types::{DataSet, Decimal};
 use presto::Presto;
-use presto::{Column, RawDataSet};
+use presto::{Column, Row};
 
 fn read(name: &str) -> (String, Value) {
     let p = "tests/data/types/".to_string() + name;
@@ -288,7 +288,7 @@ fn test_decimal() {
 }
 
 #[test]
-fn test_raw_data_set() {
+fn test_complex() {
     #[derive(Presto, PartialEq, Debug, Clone)]
     struct A {
         a: String,
@@ -305,12 +305,32 @@ fn test_raw_data_set() {
     }
 
     let (s, v) = read("complex");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+    assert_eq!(
+        d[0],
+        A {
+            a: "abc".into(),
+            b: 10,
+            c: true,
+            d: vec![1, 2, 3],
+            e: B { x: 1, y: 1.1 }
+        }
+    );
+
+    let (s, v) = read("complex");
     let (_, v) = split(v).unwrap();
-    let d = serde_json::from_str::<RawDataSet>(&s).unwrap();
+    let d = serde_json::from_str::<DataSet<Row>>(&s)
+        .unwrap()
+        .into_vec()
+        .into_iter()
+        .map(|r| r.into_json())
+        .collect::<Vec<_>>();
 
-    let (ty, data) = d.split();
-    let data = serde_json::to_value(data).unwrap();
+    let d = serde_json::to_value(d).unwrap();
 
-    assert_eq!(A::ty(), ty);
-    assert_eq!(v, data);
+    assert_eq!(v, d);
 }

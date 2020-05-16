@@ -5,6 +5,7 @@ mod float;
 mod integer;
 mod map;
 mod option;
+mod row;
 mod seq;
 mod string;
 pub(self) mod util;
@@ -17,6 +18,7 @@ pub use integer::*;
 pub use integer::*;
 pub use map::*;
 pub use option::*;
+pub use row::*;
 pub use seq::*;
 pub use string::*;
 
@@ -104,6 +106,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
     use PrestoTy::*;
 
     match (target, provided) {
+        (Unknown, _) => true,
         (Decimal(p1, s1), Decimal(p2, s2)) if p1 == p2 && s1 == s2 => true,
         (Option(ty), provided) => extract(ty, provided, data),
         (Boolean, Boolean) => true,
@@ -171,6 +174,7 @@ pub enum PrestoTy {
     Array(Box<PrestoTy>),
     Map(Box<PrestoTy>, Box<PrestoTy>),
     Decimal(usize, usize),
+    Unknown,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -193,6 +197,7 @@ impl PrestoTy {
         use PrestoInt::*;
 
         let ty = match sig.raw_type {
+            RawPrestoTy::Unknown => PrestoTy::Unknown,
             RawPrestoTy::Decimal if sig.arguments.len() == 2 => {
                 let s_sig = sig.arguments.pop().unwrap();
                 let p_sig = sig.arguments.pop().unwrap();
@@ -307,6 +312,7 @@ impl PrestoTy {
         let raw_ty = self.raw_type();
 
         let params = match self {
+            Unknown => vec![],
             Decimal(p, s) => vec![
                 ClientTypeSignatureParameter::LongLiteral(p as u64),
                 ClientTypeSignatureParameter::LongLiteral(s as u64),
@@ -350,6 +356,7 @@ impl PrestoTy {
         use PrestoTy::*;
 
         match self {
+            Unknown => RawPrestoTy::Unknown.to_str().into(),
             Decimal(p, s) => format!("{}({},{})", RawPrestoTy::Decimal.to_str(), p, s).into(),
             Option(t) => t.full_type(),
             Boolean => RawPrestoTy::Boolean.to_str().into(),
@@ -385,6 +392,7 @@ impl PrestoTy {
         use PrestoTy::*;
 
         match self {
+            Unknown => RawPrestoTy::Unknown,
             Decimal(_, _) => RawPrestoTy::Decimal,
             Option(ty) => ty.raw_type(),
             Boolean => RawPrestoTy::Boolean,

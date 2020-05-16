@@ -6,7 +6,7 @@ use reqwest::Url;
 use crate::constants::*;
 use crate::error::{Error, Result};
 use crate::transaction::TransactionId;
-use crate::{DataSet, Presto, QueryResult, RawDataSet, RawQueryResult};
+use crate::{DataSet, Presto, QueryResult};
 use serde::de::DeserializeOwned;
 
 // TODO: allow_redirects proxies  request_timeout handle_retry max_attempts
@@ -217,33 +217,6 @@ macro_rules! try_get {
 }
 
 impl Client {
-    pub async fn get_raw_data_set(&self, sql: String) -> Result<RawDataSet> {
-        let res = self.get::<RawQueryResult>(sql).await?;
-        let mut ret = try_get!(res);
-
-        let mut next = res.next_uri;
-        while let Some(url) = &next {
-            let res = self.get_next::<RawQueryResult>(&url).await?;
-            next = res.next_uri;
-            if let Some(d) = try_get!(res) {
-                match &mut ret {
-                    Some(ret) => {
-                        if !ret.merge(d) {
-                            return Err(Error::InconsistentData);
-                        }
-                    }
-                    None => ret = Some(d),
-                }
-            }
-        }
-
-        if let Some(d) = ret {
-            Ok(d)
-        } else {
-            Err(Error::EmptyData)
-        }
-    }
-
     pub async fn get_data_set<T: Presto>(&self, sql: String) -> Result<DataSet<T>> {
         let res = self.get::<QueryResult<T>>(sql).await?;
         let mut ret = try_get!(res);

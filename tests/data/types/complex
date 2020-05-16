@@ -2,7 +2,7 @@
     "columns": [
         {
             "name": "a",
-            "type": "varchar(3)",
+            "type": "varchar",
             "typeSignature": {
                 "rawType": "varchar",
                 "typeArguments": [],
@@ -10,7 +10,7 @@
                 "arguments": [
                     {
                         "kind": "LONG_LITERAL",
-                        "value": 3
+                        "value": 2147483647
                     }
                 ]
             }

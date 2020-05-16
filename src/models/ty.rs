@@ -34,6 +34,7 @@ pub enum RawPrestoTy {
     Uuid,
     Geometry,
     BingTile,
+    Unknown,
 }
 
 impl RawPrestoTy {
@@ -69,6 +70,7 @@ impl RawPrestoTy {
             Uuid => "uuid",
             Geometry => "Geometry",
             BingTile => "BingTile",
+            Unknown => "unknown",
         }
     }
 
@@ -104,6 +106,7 @@ impl RawPrestoTy {
             "uuid" => Uuid,
             "Geometry" => Geometry,
             "BingTile" => BingTile,
+            "unknown" => Unknown,
             _ => return None,
         };
         Some(ty)
