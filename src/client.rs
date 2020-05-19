@@ -1,3 +1,5 @@
+use async_stream::try_stream;
+use futures::Stream;
 use http::uri::Scheme;
 use reqwest::header::HeaderMap;
 use reqwest::header::HeaderValue;
@@ -9,7 +11,13 @@ use crate::transaction::TransactionId;
 use crate::{DataSet, Presto, QueryResult};
 use serde::de::DeserializeOwned;
 
-// TODO: allow_redirects proxies  request_timeout handle_retry max_attempts
+// TODO:
+// allow_redirects
+// proxies
+// request_timeout
+// handle_retry
+// max_attempts
+// cancel
 
 #[derive(Clone, Debug)]
 pub enum Auth {
@@ -217,7 +225,31 @@ macro_rules! try_get {
 }
 
 impl Client {
-    pub async fn get_data_set<T: Presto>(&self, sql: String) -> Result<DataSet<T>> {
+    pub fn get_stream<T: Presto + Unpin + 'static>(
+        &self,
+        sql: String,
+    ) -> impl Stream<Item = Result<DataSet<T>>> + '_ {
+        try_stream! {
+            let res = self.get::<QueryResult<T>>(sql).await?;
+            if let Some(e) = res.error {
+                Err(Error::QueryError(e))?;
+            }  else {
+                let mut next = res.next_uri;
+                while let Some(url) = next {
+                    let res = self.get_next::<QueryResult<T>>(&url).await?;
+                    next = res.next_uri;
+
+                    if  let Some(e) = res.error {
+                        Err(Error::QueryError(e))?;
+                    } else if let Some(d)  = res.data_set {
+                        yield d
+                    }
+                }
+            }
+        }
+    }
+
+    pub async fn get_all<T: Presto + 'static>(&self, sql: String) -> Result<DataSet<T>> {
         let res = self.get::<QueryResult<T>>(sql).await?;
         let mut ret = try_get!(res);
 
