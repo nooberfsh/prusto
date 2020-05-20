@@ -1,6 +1,9 @@
+use std::collections::HashMap;
+
 use async_stream::try_stream;
 use futures::Stream;
 use http::uri::Scheme;
+use itertools::Itertools;
 use reqwest::header::HeaderMap;
 use reqwest::header::HeaderValue;
 use reqwest::Url;
@@ -21,20 +24,12 @@ pub enum Auth {
     Basic(String, String),
 }
 
-pub struct SessionProperties {}
-
-impl SessionProperties {
-    fn to_string(&self) -> String {
-        todo!()
-    }
-}
-
 pub struct ClientSession {
     user: String,
     source: String,
     catalog: Option<String>,
     schema: Option<String>,
-    session_properties: Option<SessionProperties>,
+    session_properties: HashMap<String, String>,
     http_headers: Option<HeaderMap>,
     transaction_id: Option<TransactionId>,
 }
@@ -56,7 +51,7 @@ impl ClientBuilder {
             source: "presto-python-client".to_string(),
             catalog: None,
             schema: None,
-            session_properties: None,
+            session_properties: HashMap::new(),
             http_headers: None,
             transaction_id: None,
         };
@@ -91,8 +86,8 @@ impl ClientBuilder {
         self
     }
 
-    pub fn session_properties(mut self, s: SessionProperties) -> Self {
-        self.session.session_properties = Some(s);
+    pub fn session_properties(mut self, s: HashMap<String, String>) -> Self {
+        self.session.session_properties = s;
         self
     }
 
@@ -185,10 +180,16 @@ impl ClientBuilder {
             HeaderValue::from_str(&self.session.user).map_err(|_| InvalidUser)?,
         );
 
-        if let Some(s) = &self.session.session_properties {
+        if !self.session.session_properties.is_empty() {
+            let v = self
+                .session
+                .session_properties
+                .iter()
+                .map(|(k, v)| format!("{}={}", k, v))
+                .join(",");
             headers.insert(
-                HEADER_USER,
-                HeaderValue::from_str(&s.to_string()).map_err(|_| InvalidProperties)?,
+                HEADER_SESSION,
+                HeaderValue::from_str(&v).map_err(|_| InvalidProperties)?,
             );
         }
 
