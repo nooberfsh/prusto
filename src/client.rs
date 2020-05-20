@@ -14,9 +14,6 @@ use crate::{DataSet, Presto, QueryResult};
 // TODO:
 // allow_redirects
 // proxies
-// request_timeout
-// handle_retry
-// max_attempts
 // cancel
 
 #[derive(Clone, Debug)]
@@ -49,7 +46,7 @@ pub struct ClientBuilder {
     http_scheme: Scheme,
     auth: Option<Auth>,
     max_attempt: usize,
-    request_timeout: f32, // in seconds
+    request_timeout: u64, // in seconds
 }
 
 impl ClientBuilder {
@@ -69,8 +66,8 @@ impl ClientBuilder {
             port: 8080,                // default
             http_scheme: Scheme::HTTP, // default is http
             auth: None,
-            max_attempt: 3,        // default
-            request_timeout: 30.0, //default
+            max_attempt: 3,      // default
+            request_timeout: 30, //default
         }
     }
 
@@ -123,7 +120,7 @@ impl ClientBuilder {
         self
     }
 
-    pub fn request_timeout(mut self, s: f32) -> Self {
+    pub fn request_timeout(mut self, s: u64) -> Self {
         self.request_timeout = s;
         self
     }
@@ -132,15 +129,19 @@ impl ClientBuilder {
         let statement_url = self.statement_url();
         let http_headers = self.headers()?;
         let max_attempt = self.max_attempt;
+        let client = reqwest::ClientBuilder::new()
+            .timeout(std::time::Duration::from_secs(self.request_timeout))
+            .build()
+            .unwrap();
         if let Some(_) = &self.auth {
             if self.http_scheme == Scheme::HTTP {
                 return Err(Error::BasicAuthWithHttp);
             }
         }
         let cli = Client {
-            client: reqwest::Client::new(),
             session: self.session,
             auth: self.auth,
+            client,
             http_headers,
             statement_url,
             max_attempt,
