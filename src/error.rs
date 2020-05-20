@@ -29,6 +29,8 @@ pub enum Error {
     InconsistentData,
     #[error("empty data")]
     EmptyData,
+    #[error("reach max attempt: {0}")]
+    ReachMaxAttempt(usize),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

@@ -4,12 +4,12 @@ use http::uri::Scheme;
 use reqwest::header::HeaderMap;
 use reqwest::header::HeaderValue;
 use reqwest::Url;
+use tokio::time::{delay_for, Duration};
 
 use crate::constants::*;
 use crate::error::{Error, Result};
 use crate::transaction::TransactionId;
 use crate::{DataSet, Presto, QueryResult};
-use serde::de::DeserializeOwned;
 
 // TODO:
 // allow_redirects
@@ -48,7 +48,7 @@ pub struct ClientBuilder {
     session: ClientSession,
     http_scheme: Scheme,
     auth: Option<Auth>,
-    max_attempts: u32,
+    max_attempt: usize,
     request_timeout: f32, // in seconds
 }
 
@@ -69,7 +69,7 @@ impl ClientBuilder {
             port: 8080,                // default
             http_scheme: Scheme::HTTP, // default is http
             auth: None,
-            max_attempts: 3,       // default
+            max_attempt: 3,        // default
             request_timeout: 30.0, //default
         }
     }
@@ -118,8 +118,8 @@ impl ClientBuilder {
         self
     }
 
-    pub fn max_attempts(mut self, s: u32) -> Self {
-        self.max_attempts = s;
+    pub fn max_attempt(mut self, s: usize) -> Self {
+        self.max_attempt = s;
         self
     }
 
@@ -131,6 +131,7 @@ impl ClientBuilder {
     pub fn build(self) -> Result<Client> {
         let statement_url = self.statement_url();
         let http_headers = self.headers()?;
+        let max_attempt = self.max_attempt;
         if let Some(_) = &self.auth {
             if self.http_scheme == Scheme::HTTP {
                 return Err(Error::BasicAuthWithHttp);
@@ -142,6 +143,7 @@ impl ClientBuilder {
             auth: self.auth,
             http_headers,
             statement_url,
+            max_attempt,
         };
 
         Ok(cli)
@@ -212,16 +214,31 @@ pub struct Client {
     auth: Option<Auth>,
     http_headers: HeaderMap,
     statement_url: Url,
+    max_attempt: usize,
 }
 
-macro_rules! try_get {
-    ($res:expr) => {
-        if let Some(e) = $res.error {
-            return Err(Error::QueryError(e));
-        } else {
-            $res.data_set
+macro_rules! retry {
+    ($self:expr, $f:ident, $param:expr, $max_attempt:expr) => {{
+        for _ in 0..$max_attempt {
+            let res: std::result::Result<QueryResult<_>, reqwest::Error> =
+                $self.$f($param.clone()).await;
+            match res {
+                Ok(d) => match d.error {
+                    Some(e) => return Err(Error::QueryError(e)),
+                    None => return Ok(d),
+                },
+                Err(e) => match e.status() {
+                    Some(code) if code == 503 => {
+                        delay_for(Duration::from_millis(100)).await;
+                        continue;
+                    }
+                    _ => return Err(Error::HttpError(e)),
+                },
+            }
         }
-    };
+
+        Err(Error::ReachMaxAttempt($max_attempt))
+    }};
 }
 
 impl Client {
@@ -230,18 +247,16 @@ impl Client {
         sql: String,
     ) -> impl Stream<Item = Result<DataSet<T>>> + '_ {
         try_stream! {
-            let res = self.get::<QueryResult<T>>(sql).await?;
+            let res = self.get_retry::<T>(sql).await?;
             if let Some(e) = res.error {
                 Err(Error::QueryError(e))?;
-            }  else {
+            } else {
                 let mut next = res.next_uri;
                 while let Some(url) = next {
-                    let res = self.get_next::<QueryResult<T>>(&url).await?;
+                    let res = self.get_next_retry(&url).await?;
                     next = res.next_uri;
 
-                    if  let Some(e) = res.error {
-                        Err(Error::QueryError(e))?;
-                    } else if let Some(d)  = res.data_set {
+                    if let Some(d)  = res.data_set {
                         yield d
                     }
                 }
@@ -250,14 +265,14 @@ impl Client {
     }
 
     pub async fn get_all<T: Presto + 'static>(&self, sql: String) -> Result<DataSet<T>> {
-        let res = self.get::<QueryResult<T>>(sql).await?;
-        let mut ret = try_get!(res);
+        let res = self.get_retry(sql).await?;
+        let mut ret = res.data_set;
 
         let mut next = res.next_uri;
         while let Some(url) = &next {
-            let res = self.get_next::<QueryResult<T>>(&url).await?;
+            let res = self.get_next_retry(url).await?;
             next = res.next_uri;
-            if let Some(d) = try_get!(res) {
+            if let Some(d) = res.data_set {
                 match &mut ret {
                     Some(ret) => ret.merge(d),
                     None => ret = Some(d),
@@ -272,7 +287,18 @@ impl Client {
         }
     }
 
-    async fn get<T: DeserializeOwned>(&self, sql: String) -> Result<T> {
+    async fn get_retry<T: Presto + 'static>(&self, sql: String) -> Result<QueryResult<T>> {
+        retry!(&self, get, sql, self.max_attempt)
+    }
+
+    async fn get_next_retry<T: Presto + 'static>(&self, url: &str) -> Result<QueryResult<T>> {
+        retry!(&self, get_next, url, self.max_attempt)
+    }
+
+    async fn get<T: Presto + 'static>(
+        &self,
+        sql: String,
+    ) -> std::result::Result<QueryResult<T>, reqwest::Error> {
         let req = self
             .client
             .post(self.statement_url.clone())
@@ -287,12 +313,21 @@ impl Client {
             req
         };
 
-        let data = req.send().await?.json::<T>().await?;
+        let data = req.send().await?.json::<QueryResult<T>>().await?;
         Ok(data)
     }
 
-    async fn get_next<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
-        let data = self.client.get(url).send().await?.json::<T>().await?;
+    async fn get_next<T: Presto + 'static>(
+        &self,
+        url: &str,
+    ) -> std::result::Result<QueryResult<T>, reqwest::Error> {
+        let data = self
+            .client
+            .get(url)
+            .send()
+            .await?
+            .json::<QueryResult<T>>()
+            .await?;
         Ok(data)
     }
 }
