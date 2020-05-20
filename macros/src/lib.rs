@@ -45,21 +45,21 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
 
     let impl_trait_block = quote! {
 
-        impl #impl_generics ::presto::types::Presto for #name #ty_generics #where_clause {
-            type ValueType<'_a> = ( #(<#types as ::presto::types::Presto>::ValueType<'_a>, )* );
+        impl #impl_generics ::prusto::types::Presto for #name #ty_generics #where_clause {
+            type ValueType<'_a> = ( #(<#types as ::prusto::types::Presto>::ValueType<'_a>, )* );
             type Seed<'_a, '_de> = #seed_name #seed_ty_generics;
 
             fn value(&self) -> Self::ValueType<'_>  {
                 ( #(self.#keys.value(), )* )
             }
 
-            fn ty() -> ::presto::types::PrestoTy {
-                let types = vec![ #((#keys_lit.into(), <#types2 as ::presto::types::Presto>::ty())),* ];
-                ::presto::types::PrestoTy::Row(types)
+            fn ty() -> ::prusto::types::PrestoTy {
+                let types = vec![ #((#keys_lit.into(), <#types2 as ::prusto::types::Presto>::ty())),* ];
+                ::prusto::types::PrestoTy::Row(types)
             }
 
-            fn seed<'_a, '_de>(ctx: &'_a ::presto::types::Context<'_a>) -> Self::Seed<'_a, '_de> {
-                if let ::presto::types::PrestoTy::Row(types)  = ctx.ty() {
+            fn seed<'_a, '_de>(ctx: &'_a ::prusto::types::Context<'_a>) -> Self::Seed<'_a, '_de> {
+                if let ::prusto::types::PrestoTy::Row(types)  = ctx.ty() {
                     #seed_name {
                         ctx,
                         types,
@@ -72,14 +72,14 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
 
             fn empty() -> Self {
                 Self {
-                    #( #keys2:  <#types3 as ::presto::types::Presto>::empty(),)*
+                    #( #keys2:  <#types3 as ::prusto::types::Presto>::empty(),)*
                 }
             }
         }
 
         #vis struct #seed_name #seed_impl_generics #where_clause {
-            ctx: &'_a ::presto::types::Context<'_a>,
-            types: &'_a [(::std::string::String,::presto::types::PrestoTy)],
+            ctx: &'_a ::prusto::types::Context<'_a>,
+            types: &'_a [(::std::string::String,::prusto::types::PrestoTy)],
             _marker: ::std::marker::PhantomData<#name #ty_generics>,
         }
 
@@ -138,12 +138,12 @@ fn access_seq(fields: &[Field], name: &Ident, generics: &Generics) -> Result<Tok
 
     let access_seq = quote! {
         impl #impl_generics #name #ty_generics #where_clause {
-            fn __access_seq<'_a, '_de, _A: ::serde::de::SeqAccess<'_de>>(&mut self, idx: usize, seq: &mut _A, ctx: &'_a ::presto::types::Context<'_a>)
+            fn __access_seq<'_a, '_de, _A: ::serde::de::SeqAccess<'_de>>(&mut self, idx: usize, seq: &mut _A, ctx: &'_a ::prusto::types::Context<'_a>)
                 -> ::std::result::Result<(), _A::Error> {
                 match idx {
                     #(
                         #indices => {
-                            let seed = <#types as ::presto::types::Presto>::seed(ctx);
+                            let seed = <#types as ::prusto::types::Presto>::seed(ctx);
                             let data = seq.next_element_seed(seed)?;
                             if let Some(data) = data {
                                 self.#keys = data;

@@ -1,7 +1,7 @@
 #![allow(incomplete_features)]
 #![feature(generic_associated_types)]
 
-use presto::Presto;
+use prusto::Presto;
 
 #[derive(Presto)]
 struct Person  {

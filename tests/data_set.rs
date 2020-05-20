@@ -10,9 +10,9 @@ use std::str::FromStr;
 use maplit::{btreemap, hashmap};
 use serde_json::value::Value;
 
-use presto::types::{DataSet, Decimal};
-use presto::Presto;
-use presto::{Column, Row};
+use prusto::types::{DataSet, Decimal};
+use prusto::Presto;
+use prusto::{Column, Row};
 
 fn read(name: &str) -> (String, Value) {
     let p = "tests/data/types/".to_string() + name;

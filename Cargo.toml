@@ -1,5 +1,5 @@
 [package]
-name = "presto"
+name = "prusto"
 version = "0.1.0"
 authors = ["nooberfsh <nooberfsh@gmail.com>"]
 edition = "2018"
