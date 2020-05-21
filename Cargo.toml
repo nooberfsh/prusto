@@ -26,3 +26,4 @@ async-stream  = "0.2"
 [dev-dependencies]
 trybuild = "1.0"
 maplit = "1.0"
+dotenv = "0.15"
