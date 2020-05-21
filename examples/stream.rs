@@ -4,14 +4,8 @@
 use std::env::var;
 
 use dotenv::dotenv;
-use prusto::{ClientBuilder, Presto};
-
-#[derive(Presto, Debug)]
-struct Foo {
-    a: i64,
-    b: f64,
-    c: String,
-}
+use futures::{pin_mut, StreamExt};
+use prusto::{ClientBuilder, Row};
 
 #[tokio::main]
 async fn main() {
@@ -29,9 +23,12 @@ async fn main() {
         .build()
         .unwrap();
 
-    let data = cli.get_all::<Foo>(sql).await.unwrap().into_vec();
-
-    for r in data {
-        println!("{:?}", r)
+    let s = cli.get_stream::<Row>(sql);
+    pin_mut!(s);
+    while let Some(value) = s.next().await {
+        let v = value.unwrap().into_vec();
+        for e in v {
+            println!("got {:?}", e);
+        }
     }
 }
