@@ -3,8 +3,8 @@
 #![feature(generic_associated_types)]
 #![feature(const_generics)]
 
+mod header;
 pub mod client;
-pub mod constants;
 pub mod error;
 pub mod models;
 pub mod transaction;
@@ -14,11 +14,3 @@ pub use client::*;
 pub use macros::*;
 pub use models::*;
 pub use types::*;
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}

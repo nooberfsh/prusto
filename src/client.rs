@@ -9,7 +9,7 @@ use reqwest::header::HeaderValue;
 use reqwest::Url;
 use tokio::time::{delay_for, Duration};
 
-use crate::constants::*;
+use crate::header::*;
 use crate::error::{Error, Result};
 use crate::transaction::TransactionId;
 use crate::{DataSet, Presto, QueryResult};
@@ -212,6 +212,7 @@ impl ClientBuilder {
 
 pub struct Client {
     client: reqwest::Client,
+    #[allow(unused)]
     session: ClientSession,
     auth: Option<Auth>,
     http_headers: HeaderMap,
