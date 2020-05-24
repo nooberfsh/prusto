@@ -289,9 +289,6 @@ fn test_decimal() {
 
 #[test]
 fn test_complex() {
-    use PrestoFloat::*;
-    use PrestoInt::*;
-
     #[derive(Presto, PartialEq, Debug, Clone)]
     struct A {
         a: String,
@@ -326,8 +323,13 @@ fn test_complex() {
             e: B { x: 1, y: 1.1 }
         }
     );
+}
 
-    // test Row
+#[test]
+fn test_complex_row() {
+    use PrestoFloat::*;
+    use PrestoInt::*;
+
     let (s, v) = read("complex");
     let d = serde_json::from_str::<DataSet<Row>>(&s).unwrap();
     assert_ds(d.clone(), v);
@@ -352,4 +354,5 @@ fn test_complex() {
             ),
         ]
     );
+
 }
