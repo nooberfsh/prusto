@@ -2,19 +2,40 @@ use std::fmt;
 use std::marker::PhantomData;
 
 use serde::de::{self, Deserializer, MapAccess, Visitor};
-use serde::ser::{self, SerializeStruct, Serializer};
+use serde::ser::{SerializeStruct, Serializer};
 use serde::{Deserialize, Serialize};
 
 use super::util::SerializeIterator;
-use super::{Context, Presto, PrestoTy, VecSeed};
+use super::{Context, Error, Presto, PrestoTy, VecSeed};
 use crate::models::Column;
+use crate::Row;
 
 #[derive(Debug)]
 pub struct DataSet<T: Presto> {
+    types: Vec<(String, PrestoTy)>,
     data: Vec<T>,
 }
 
 impl<T: Presto> DataSet<T> {
+    pub fn new(data: Vec<T>) -> Result<Self, Error> {
+        let types = match T::ty() {
+            PrestoTy::Row(r) => {
+                if r.is_empty() {
+                    return Err(Error::EmptyInPrestoRow);
+                } else {
+                    r
+                }
+            }
+            _ => return Err(Error::NonePrestoRow),
+        };
+
+        Ok(DataSet { types, data })
+    }
+
+    pub fn split(self) -> (Vec<(String, PrestoTy)>, Vec<T>) {
+        (self.types, self.data)
+    }
+
     pub fn into_vec(self) -> Vec<T> {
         self.data
     }
@@ -28,9 +49,19 @@ impl<T: Presto> DataSet<T> {
     }
 }
 
+impl DataSet<Row> {
+    pub fn new_row(types: Vec<(String, PrestoTy)>, data: Vec<Row>) -> Result<Self, Error> {
+        if types.is_empty() {
+            return Err(Error::EmptyInPrestoRow);
+        }
+        Ok(DataSet { types, data })
+    }
+}
+
 impl<T: Presto + Clone> Clone for DataSet<T> {
     fn clone(&self) -> Self {
         DataSet {
+            types: self.types.clone(),
             data: self.data.clone(),
         }
     }
@@ -44,28 +75,19 @@ impl<T: Presto> Serialize for DataSet<T> {
     where
         S: Serializer,
     {
-        use PrestoTy::*;
         let mut state = serializer.serialize_struct("DataSet", 2)?;
 
-        let columns = match T::ty() {
-            Row(r) if !r.is_empty() => {
-                let mut ret = vec![];
-                for (name, ty) in r {
-                    let column = Column {
-                        name,
-                        ty: ty.full_type().into_owned(),
-                        type_signature: Some(ty.into_type_signature()),
-                    };
-                    ret.push(column);
-                }
-                ret
-            }
-            _ => {
-                return Err(ser::Error::custom(format!(
-                    "only row type can be serialized"
-                )))
-            }
-        };
+        let columns = self
+            .types
+            .clone()
+            .into_iter()
+            .map(|(name, ty)| Column {
+                name,
+                ty: ty.full_type().into_owned(),
+                type_signature: Some(ty.into_type_signature()),
+            })
+            .collect::<Vec<_>>();
+
         let data = SerializeIterator {
             iter: self.data.iter().map(|d| d.value()),
             size: Some(self.data.len()),
@@ -105,16 +127,24 @@ impl<'de, T: Presto> Deserialize<'de> for DataSet<T> {
             where
                 V: MapAccess<'de>,
             {
-                let ty = if let Some(Field::Columns) = map.next_key()? {
+                let types = if let Some(Field::Columns) = map.next_key()? {
                     let columns: Vec<Column> = map.next_value()?;
-                    PrestoTy::from_columns(columns).map_err(|e| {
-                        de::Error::custom(format!("deserialize presto type failed, reason: {}", e))
-                    })?
+                    let mut types = vec![];
+                    for column in columns {
+                        let ty = PrestoTy::from_column(column).map_err(|e| {
+                            de::Error::custom(format!(
+                                "deserialize presto type failed, reason: {}",
+                                e
+                            ))
+                        })?;
+                        types.push(ty);
+                    }
+                    types
                 } else {
                     return Err(de::Error::missing_field("columns"));
                 };
 
-                let array_ty = PrestoTy::Array(Box::new(ty));
+                let array_ty = PrestoTy::Array(Box::new(PrestoTy::Row(types.clone())));
                 let ctx = Context::new::<Vec<T>>(&array_ty).map_err(|e| {
                     de::Error::custom(format!("invalid presto type, reason: {}", e))
                 })?;
@@ -133,7 +163,13 @@ impl<'de, T: Presto> Deserialize<'de> for DataSet<T> {
                     None => {}
                 }
 
-                Ok(DataSet { data })
+                if let PrestoTy::Unknown = T::ty() {
+                    Ok(DataSet { types, data })
+                } else {
+                    DataSet::new(data).map_err(|e| {
+                        de::Error::custom(format!("construct data failed, reason: {}", e))
+                    })
+                }
             }
         }
 

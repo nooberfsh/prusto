@@ -9,8 +9,8 @@ use reqwest::header::HeaderValue;
 use reqwest::Url;
 use tokio::time::{delay_for, Duration};
 
-use crate::header::*;
 use crate::error::{Error, Result};
+use crate::header::*;
 use crate::transaction::TransactionId;
 use crate::{DataSet, Presto, QueryResult};
 

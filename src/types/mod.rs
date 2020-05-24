@@ -46,6 +46,8 @@ pub enum Error {
     InvalidColumn,
     InvalidTypeSignature,
     ParseDecimalFailed(String),
+    EmptyInPrestoRow,
+    NonePrestoRow,
 }
 
 pub trait Presto {

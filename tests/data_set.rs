@@ -11,8 +11,8 @@ use maplit::{btreemap, hashmap};
 use serde_json::value::Value;
 
 use prusto::types::{DataSet, Decimal};
-use prusto::Presto;
 use prusto::{Column, Row};
+use prusto::{Presto, PrestoFloat, PrestoInt, PrestoTy};
 
 fn read(name: &str) -> (String, Value) {
     let p = "tests/data/types/".to_string() + name;
@@ -289,6 +289,9 @@ fn test_decimal() {
 
 #[test]
 fn test_complex() {
+    use PrestoFloat::*;
+    use PrestoInt::*;
+
     #[derive(Presto, PartialEq, Debug, Clone)]
     struct A {
         a: String,
@@ -304,12 +307,15 @@ fn test_complex() {
         y: f64,
     }
 
+    // test custom type
     let (s, v) = read("complex");
     let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
     assert_ds(d.clone(), v);
 
-    let d = d.into_vec();
+    let (t, d) = d.split();
+    let ty = PrestoTy::Row(t);
     assert_eq!(d.len(), 1);
+    assert_eq!(ty, A::ty());
     assert_eq!(
         d[0],
         A {
@@ -321,16 +327,29 @@ fn test_complex() {
         }
     );
 
+    // test Row
     let (s, v) = read("complex");
-    let (_, v) = split(v).unwrap();
-    let d = serde_json::from_str::<DataSet<Row>>(&s)
-        .unwrap()
-        .into_vec()
-        .into_iter()
-        .map(|r| r.into_json())
-        .collect::<Vec<_>>();
+    let d = serde_json::from_str::<DataSet<Row>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+    let (t, _) = d.split();
 
-    let d = serde_json::to_value(d).unwrap();
-
-    assert_eq!(v, d);
+    assert_eq!(
+        t,
+        vec![
+            ("a".into(), PrestoTy::Varchar),
+            ("b".into(), PrestoTy::PrestoInt(I32)),
+            ("c".into(), PrestoTy::Boolean),
+            (
+                "d".into(),
+                PrestoTy::Array(Box::new(PrestoTy::PrestoInt(I32)))
+            ),
+            (
+                "e".into(),
+                PrestoTy::Row(vec![
+                    ("x".into(), PrestoTy::PrestoInt(I64)),
+                    ("y".into(), PrestoTy::PrestoFloat(F64))
+                ])
+            ),
+        ]
+    );
 }

@@ -3,9 +3,9 @@
 #![feature(generic_associated_types)]
 #![feature(const_generics)]
 
-mod header;
 pub mod client;
 pub mod error;
+mod header;
 pub mod models;
 pub mod transaction;
 pub mod types;
