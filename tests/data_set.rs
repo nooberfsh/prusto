@@ -354,5 +354,41 @@ fn test_complex_row() {
             ),
         ]
     );
+}
 
+#[test]
+fn test_complex_reorder() {
+    #[derive(Presto, PartialEq, Debug, Clone)]
+    struct A {
+        d: Vec<i32>, //0
+        c: bool,     //
+        b: i32,      //
+        e: B,
+        a: String, //4
+    }
+
+    #[derive(Presto, PartialEq, Debug, Clone)]
+    struct B {
+        y: f64,
+        x: i64,
+    }
+
+    // test custom type
+    let (s, _) = read("complex");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+
+    let (t, d) = d.split();
+    let ty = PrestoTy::Row(t);
+    assert_eq!(d.len(), 1);
+    assert_eq!(ty, A::ty());
+    assert_eq!(
+        d[0],
+        A {
+            a: "abc".into(),
+            b: 10,
+            c: true,
+            d: vec![1, 2, 3],
+            e: B { x: 1, y: 1.1 }
+        }
+    );
 }

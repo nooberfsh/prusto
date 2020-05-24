@@ -60,13 +60,18 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
 
             fn seed<'_a, '_de>(ctx: &'_a ::prusto::types::Context<'_a>) -> Self::Seed<'_a, '_de> {
                 if let ::prusto::types::PrestoTy::Row(types)  = ctx.ty() {
+                    let row_map = ctx.row_map().expect("invalid context");
+                    if row_map.len() != types.len() {
+                        panic!("invalid context");
+                    }
                     #seed_name {
                         ctx,
                         types,
+                        row_map,
                         _marker: ::std::marker::PhantomData,
                     }
                 } else {
-                    unreachable!()
+                    panic!("invalid context")
                 }
             }
 
@@ -80,6 +85,7 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
         #vis struct #seed_name #seed_impl_generics #where_clause {
             ctx: &'_a ::prusto::types::Context<'_a>,
             types: &'_a [(::std::string::String,::prusto::types::PrestoTy)],
+            row_map: &'_a [usize],
             _marker: ::std::marker::PhantomData<#name #ty_generics>,
         }
 
@@ -104,10 +110,8 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
             fn visit_seq<_A: ::serde::de::SeqAccess<'_de>>(self, mut seq: _A) -> Result<Self::Value, _A::Error> {
                 let mut ret = Self::Value::empty();
 
-                let row_map = self.ctx.row_map().expect("invalid context");
-                for idx in row_map {
-                    let ty = &self.types[*idx].1;
-                    let ctx = self.ctx.with_ty(&ty);
+                for (idx, ty) in self.row_map.iter().zip(self.types.iter().map(|r| &r.1)) {
+                    let ctx = self.ctx.with_ty(ty);
                     ret.__access_seq(*idx, &mut seq, &ctx)?;
                 }
 
