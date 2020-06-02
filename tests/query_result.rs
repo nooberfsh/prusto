@@ -4,7 +4,7 @@
 use std::fs::File;
 use std::io::Read;
 
-use prusto::{Presto, QueryResult};
+use prusto::{Presto, QueryResult, Row};
 
 fn read(name: &str) -> String {
     let p = "tests/data/models/".to_string() + name;
@@ -49,6 +49,17 @@ fn test_planning() {
     assert_eq!(d.next_uri, Some(uri.into()));
     assert!(d.data_set.is_none());
     assert!(d.error.is_none());
+}
+
+#[test]
+fn test_running() {
+    let s = read("query_result_running");
+    let d = serde_json::from_str::<QueryResult<Row>>(&s).unwrap();
+
+    assert!(d.error.is_none());
+
+    let data_set = d.data_set.unwrap().into_vec();
+    assert_eq!(data_set.len(), 1);
 }
 
 #[test]

@@ -1,0 +1,321 @@
+{
+    "id": "20200602_030730_01456_2587f",
+    "infoUri": "http://localhost:55537/ui/query.html?20200602_030730_01456_2587f",
+    "partialCancelUri": "http://10.20.67.21:8090/v1/stage/20200602_030730_01456_2587f.1",
+    "nextUri": "http://localhost:55537/v1/statement/20200602_030730_01456_2587f/xf401c84efa114acd8db29dab858071da/3",
+    "columns": [
+        {
+            "name": "id",
+            "type": "integer",
+            "typeSignature": {
+                "rawType": "integer",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "order_hash",
+            "type": "varchar",
+            "typeSignature": {
+                "rawType": "varchar",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 2147483647
+                    }
+                ]
+            }
+        },
+        {
+            "name": "seller_id",
+            "type": "integer",
+            "typeSignature": {
+                "rawType": "integer",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "buyer_id",
+            "type": "integer",
+            "typeSignature": {
+                "rawType": "integer",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "fee",
+            "type": "decimal(15,5)",
+            "typeSignature": {
+                "rawType": "decimal",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 15
+                    },
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 5
+                    }
+                ]
+            }
+        },
+        {
+            "name": "c_fee",
+            "type": "decimal(15,5)",
+            "typeSignature": {
+                "rawType": "decimal",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 15
+                    },
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 5
+                    }
+                ]
+            }
+        },
+        {
+            "name": "memo",
+            "type": "varchar",
+            "typeSignature": {
+                "rawType": "varchar",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 2147483647
+                    }
+                ]
+            }
+        },
+        {
+            "name": "pay_time",
+            "type": "timestamp",
+            "typeSignature": {
+                "rawType": "timestamp",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "pay_action_time",
+            "type": "timestamp",
+            "typeSignature": {
+                "rawType": "timestamp",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "update_time",
+            "type": "timestamp",
+            "typeSignature": {
+                "rawType": "timestamp",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "create_time",
+            "type": "timestamp",
+            "typeSignature": {
+                "rawType": "timestamp",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "expired_time",
+            "type": "timestamp",
+            "typeSignature": {
+                "rawType": "timestamp",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "status",
+            "type": "integer",
+            "typeSignature": {
+                "rawType": "integer",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "txn_type",
+            "type": "integer",
+            "typeSignature": {
+                "rawType": "integer",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "version",
+            "type": "integer",
+            "typeSignature": {
+                "rawType": "integer",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "package_id",
+            "type": "bigint",
+            "typeSignature": {
+                "rawType": "bigint",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "package_type",
+            "type": "integer",
+            "typeSignature": {
+                "rawType": "integer",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "package_order",
+            "type": "varchar",
+            "typeSignature": {
+                "rawType": "varchar",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 2147483647
+                    }
+                ]
+            }
+        },
+        {
+            "name": "dw_extract_time",
+            "type": "timestamp",
+            "typeSignature": {
+                "rawType": "timestamp",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "dt",
+            "type": "varchar",
+            "typeSignature": {
+                "rawType": "varchar",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "LONG_LITERAL",
+                        "value": 2147483647
+                    }
+                ]
+            }
+        }
+    ],
+    "data": [
+        [
+            18,
+            "a8445619abd08f3ba0ebfcb31183f7f9",
+            20,
+            1380446291,
+            "6000.00000",
+            "6000.00000",
+            "域名pay.jiasutu.cn和jiasutu.ccSSL证书托管",
+            "2015-10-06 22:04:00.000",
+            "2015-09-06 14:05:49.000",
+            "2015-11-21 01:17:11.000",
+            "2015-11-21 01:17:11.000",
+            "2038-01-01 00:00:00.000",
+            2,
+            0,
+            1,
+            0,
+            0,
+            "",
+            "2020-06-01 01:00:40.873",
+            "2020-05-31"
+        ]
+    ],
+    "stats": {
+        "state": "RUNNING",
+        "queued": false,
+        "scheduled": true,
+        "nodes": 1,
+        "totalSplits": 17,
+        "queuedSplits": 1,
+        "runningSplits": 16,
+        "completedSplits": 0,
+        "cpuTimeMillis": 0,
+        "wallTimeMillis": 0,
+        "queuedTimeMillis": 87,
+        "elapsedTimeMillis": 3072,
+        "processedRows": 0,
+        "processedBytes": 0,
+        "peakMemoryBytes": 0,
+        "spilledBytes": 0,
+        "rootStage": {
+            "stageId": "0",
+            "state": "RUNNING",
+            "done": false,
+            "nodes": 1,
+            "totalSplits": 16,
+            "queuedSplits": 0,
+            "runningSplits": 16,
+            "completedSplits": 0,
+            "cpuTimeMillis": 0,
+            "wallTimeMillis": 0,
+            "processedRows": 0,
+            "processedBytes": 0,
+            "subStages": [
+                {
+                    "stageId": "1",
+                    "state": "RUNNING",
+                    "done": false,
+                    "nodes": 1,
+                    "totalSplits": 1,
+                    "queuedSplits": 1,
+                    "runningSplits": 0,
+                    "completedSplits": 0,
+                    "cpuTimeMillis": 0,
+                    "wallTimeMillis": 0,
+                    "processedRows": 0,
+                    "processedBytes": 0,
+                    "subStages": []
+                }
+            ]
+        },
+        "progressPercentage": 0
+    },
+    "warnings": []
+}
