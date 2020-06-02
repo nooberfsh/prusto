@@ -1,5 +1,6 @@
 mod boolean;
 mod data_set;
+mod date_time;
 mod decimal;
 mod float;
 mod integer;
@@ -12,6 +13,7 @@ pub(self) mod util;
 
 pub use boolean::*;
 pub use data_set::*;
+pub use date_time::*;
 pub use decimal::*;
 pub use float::*;
 pub use integer::*;
@@ -112,6 +114,9 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
         (Decimal(p1, s1), Decimal(p2, s2)) if p1 == p2 && s1 == s2 => true,
         (Option(ty), provided) => extract(ty, provided, data),
         (Boolean, Boolean) => true,
+        (Date, Date) => true,
+        (Time, Time) => true,
+        (Timestamp, Timestamp) => true,
         (PrestoInt(_), PrestoInt(_)) => true,
         (PrestoFloat(_), PrestoFloat(_)) => true,
         (Varchar, Varchar) => true,
@@ -166,6 +171,9 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PrestoTy {
+    Date,
+    Time,
+    Timestamp,
     Option(Box<PrestoTy>),
     Boolean,
     PrestoInt(PrestoInt),
@@ -199,6 +207,9 @@ impl PrestoTy {
         use PrestoInt::*;
 
         let ty = match sig.raw_type {
+            RawPrestoTy::Date => PrestoTy::Date,
+            RawPrestoTy::Time => PrestoTy::Time,
+            RawPrestoTy::Timestamp => PrestoTy::Timestamp,
             RawPrestoTy::Unknown => PrestoTy::Unknown,
             RawPrestoTy::Decimal if sig.arguments.len() == 2 => {
                 let s_sig = sig.arguments.pop().unwrap();
@@ -319,6 +330,9 @@ impl PrestoTy {
                 ClientTypeSignatureParameter::LongLiteral(p as u64),
                 ClientTypeSignatureParameter::LongLiteral(s as u64),
             ],
+            Date => vec![],
+            Time => vec![],
+            Timestamp => vec![],
             Option(t) => return t.into_type_signature(),
             Boolean => vec![],
             PrestoInt(_) => vec![],
@@ -361,6 +375,9 @@ impl PrestoTy {
             Unknown => RawPrestoTy::Unknown.to_str().into(),
             Decimal(p, s) => format!("{}({},{})", RawPrestoTy::Decimal.to_str(), p, s).into(),
             Option(t) => t.full_type(),
+            Date => RawPrestoTy::Date.to_str().into(),
+            Time => RawPrestoTy::Time.to_str().into(),
+            Timestamp => RawPrestoTy::Timestamp.to_str().into(),
             Boolean => RawPrestoTy::Boolean.to_str().into(),
             PrestoInt(ty) => ty.raw_type().to_str().into(),
             PrestoFloat(ty) => ty.raw_type().to_str().into(),
@@ -395,6 +412,9 @@ impl PrestoTy {
 
         match self {
             Unknown => RawPrestoTy::Unknown,
+            Date => RawPrestoTy::Date,
+            Time => RawPrestoTy::Time,
+            Timestamp => RawPrestoTy::Timestamp,
             Decimal(_, _) => RawPrestoTy::Decimal,
             Option(ty) => ty.raw_type(),
             Boolean => RawPrestoTy::Boolean,

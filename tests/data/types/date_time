@@ -1,0 +1,41 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "date",
+            "typeSignature": {
+                "rawType": "date",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "b",
+            "type": "time",
+            "typeSignature": {
+                "rawType": "time",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        },
+        {
+            "name": "c",
+            "type": "timestamp",
+            "typeSignature": {
+                "rawType": "timestamp",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        }
+    ],
+    "data": [
+        [
+            "2001-08-22",
+            "01:02:03.456",
+            "2001-08-22 03:04:05.321"
+        ]
+    ]
+}

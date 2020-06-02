@@ -7,6 +7,7 @@ use std::io::Read;
 use std::iter::FromIterator;
 use std::str::FromStr;
 
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use maplit::{btreemap, hashmap};
 use serde_json::value::Value;
 
@@ -265,6 +266,28 @@ fn test_bool() {
     let d = d.into_vec();
     assert_eq!(d.len(), 1);
     assert_eq!(d[0], A { a: true, b: false });
+}
+
+#[test]
+fn test_date_time() {
+    #[derive(Presto, PartialEq, Debug, Clone)]
+    struct A {
+        a: NaiveDate,
+        b: NaiveTime,
+        c: NaiveDateTime,
+    }
+
+    let (s, v) = read("date_time");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+
+    let a = NaiveDate::from_ymd(2001, 8, 22);
+    let b = NaiveTime::from_hms_milli(1, 2, 3, 456);
+    let c = NaiveDate::from_ymd(2001, 8, 22).and_hms_milli(3, 4, 5, 321);
+    assert_eq!(d[0], A { a, b, c });
 }
 
 #[test]
