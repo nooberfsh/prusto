@@ -11,7 +11,7 @@
                 "literalArguments": [],
                 "arguments": [
                     {
-                        "kind": "LONG_LITERAL",
+                        "kind": "LONG",
                         "value": 3
                     }
                 ]

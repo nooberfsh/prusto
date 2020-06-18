@@ -9,7 +9,7 @@
                 "literalArguments": [],
                 "arguments": [
                     {
-                        "kind": "LONG_LITERAL",
+                        "kind": "LONG",
                         "value": 2147483647
                     }
                 ]
@@ -24,7 +24,7 @@
                 "literalArguments": [],
                 "arguments": [
                     {
-                        "kind": "LONG_LITERAL",
+                        "kind": "LONG",
                         "value": 2147483647
                     }
                 ]

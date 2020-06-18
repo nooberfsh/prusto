@@ -44,7 +44,7 @@ pub enum ClientTypeSignatureParameter {
     TypeSignature(TypeSignature),
     #[serde(rename = "NAMED_TYPE_SIGNATURE")]
     NamedTypeSignature(NamedTypeSignature),
-    #[serde(rename = "LONG_LITERAL")]
+    #[serde(rename = "LONG")]
     LongLiteral(u64),
 }
 
@@ -81,7 +81,7 @@ mod tests {
                 "literalArguments": [],
                 "arguments": [
                     {
-                        "kind": "LONG_LITERAL",
+                        "kind": "LONG",
                         "value": 2147483647
                     }
                 ]
@@ -116,7 +116,7 @@ mod tests {
                             "literalArguments": [],
                             "arguments": [
                                 {
-                                    "kind": "LONG_LITERAL",
+                                    "kind": "LONG",
                                     "value": 3
                                 }
                             ]

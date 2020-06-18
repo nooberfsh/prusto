@@ -9,11 +9,11 @@
                 "literalArguments": [],
                 "arguments": [
                     {
-                        "kind": "LONG_LITERAL",
+                        "kind": "LONG",
                         "value": 38
                     },
                     {
-                        "kind": "LONG_LITERAL",
+                        "kind": "LONG",
                         "value": 10
                     }
                 ]
