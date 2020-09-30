@@ -30,6 +30,7 @@ pub use string::*;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::iter::FromIterator;
 
 use derive_more::Display;
 use itertools::Itertools;
@@ -77,16 +78,12 @@ pub struct Context<'a> {
 impl<'a> Context<'a> {
     pub fn new<T: Presto>(provided: &'a PrestoTy) -> Result<Self, Error> {
         let target = T::ty();
-        let mut data = HashMap::new();
-
-        if extract(&target, provided, &mut data) {
-            Ok(Context {
-                ty: provided,
-                map: Arc::new(data),
-            })
-        } else {
-            Err(Error::InvalidPrestoType)
-        }
+        let ret = extract(&target, provided)?;
+        let map = HashMap::from_iter(ret.into_iter());
+        Ok(Context {
+            ty: provided,
+            map: Arc::new(map),
+        })
     }
 
     pub fn with_ty(&'a self, ty: &'a PrestoTy) -> Context<'a> {
@@ -106,30 +103,36 @@ impl<'a> Context<'a> {
     }
 }
 
-fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec<usize>>) -> bool {
+fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usize>)>, Error> {
     use PrestoTy::*;
 
     match (target, provided) {
-        (Unknown, _) => true,
-        (Decimal(p1, s1), Decimal(p2, s2)) if p1 == p2 && s1 == s2 => true,
-        (Option(ty), provided) => extract(ty, provided, data),
-        (Boolean, Boolean) => true,
-        (Date, Date) => true,
-        (Time, Time) => true,
-        (Timestamp, Timestamp) => true,
-        (PrestoInt(_), PrestoInt(_)) => true,
-        (PrestoFloat(_), PrestoFloat(_)) => true,
-        (Varchar, Varchar) => true,
+        (Unknown, _) => Ok(vec![]),
+        (Decimal(p1, s1), Decimal(p2, s2)) if p1 == p2 && s1 == s2 => Ok(vec![]),
+        (Option(ty), provided) => extract(ty, provided),
+        (Boolean, Boolean) => Ok(vec![]),
+        (Date, Date) => Ok(vec![]),
+        (Time, Time) => Ok(vec![]),
+        (Timestamp, Timestamp) => Ok(vec![]),
+        (PrestoInt(_), PrestoInt(_)) => Ok(vec![]),
+        (PrestoFloat(_), PrestoFloat(_)) => Ok(vec!{}),
+        (Varchar, Varchar) => Ok(vec![]),
         (Tuple(t1), Tuple(t2)) => {
             if t1.len() != t2.len() {
-                false
+                Err(Error::InvalidPrestoType)
             } else {
-                t1.iter().zip(t2.iter()).all(|(l, r)| extract(l, r, data))
+                t1.iter().zip(t2.iter())
+                    .map(|(l, r)| extract(l, r))
+                    .try_fold(vec![], |mut map, r| {
+                        let r = r?;
+                        map.extend(r);
+                        Ok(map)
+                    })
             }
         }
         (Row(t1), Row(t2)) => {
             if t1.len() != t2.len() {
-                false
+                Err(Error::InvalidPrestoType)
             } else {
                 // create a vector of the original element's reference
                 let mut t1k: Vec<_> = t1.iter().collect();
@@ -137,13 +140,21 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
                 let mut t2k: Vec<_> = t2.iter().collect();
                 t2k.sort_by(|t1, t2| t1.0.cmp(&t2.0));
 
-                let ret = t1k
+                let mut ret = t1k
                     .iter()
                     .zip(t2k.iter())
-                    .all(|(l, r)| l.0 == r.0 && extract(&l.1, &r.1, data));
-                if !ret {
-                    return ret;
-                }
+                    .map(|(l, r)| {
+                      if l.0 == r.0  {
+                          extract(&l.1, &r.1)
+                      } else {
+                          Err(Error::InvalidPrestoType)
+                      }
+                    })
+                    .try_fold(vec![], |mut map, r| {
+                        let r = r?;
+                        map.extend(r);
+                        Ok(map)
+                    })?;
 
                 let mut map = Vec::with_capacity(t2.len());
                 for (provided, _) in t2 {
@@ -157,15 +168,19 @@ fn extract(target: &PrestoTy, provided: &PrestoTy, data: &mut HashMap<usize, Vec
                 assert_eq!(map.len(), t2.len());
 
                 let key = provided as *const PrestoTy as usize;
-                let prev = data.insert(key, map);
-                assert!(prev.is_none());
+                ret.push((key, map));
 
-                true
+                Ok(ret)
             }
         }
-        (Array(t1), Array(t2)) => extract(t1, t2, data),
-        (Map(t1k, t1v), Map(t2k, t2v)) => extract(t1k, t2k, data) && extract(t1v, t2v, data),
-        _ => false,
+        (Array(t1), Array(t2)) => extract(t1, t2),
+        (Map(t1k, t1v), Map(t2k, t2v)) =>  {
+            let mut l = extract(t1k, t2k)?;
+            let r = extract(t1v, t2v)?;
+            l.extend(r);
+            Ok(l)
+        }
+        _ => Err(Error::InvalidPrestoType),
     }
 }
 
