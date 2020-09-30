@@ -29,11 +29,11 @@ pub use string::*;
 
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::iter::FromIterator;
+use std::sync::Arc;
 
 use derive_more::Display;
-use itertools::Itertools;
+use iterable::*;
 use serde::de::DeserializeSeed;
 use serde::Serialize;
 
@@ -115,19 +115,15 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
         (Time, Time) => Ok(vec![]),
         (Timestamp, Timestamp) => Ok(vec![]),
         (PrestoInt(_), PrestoInt(_)) => Ok(vec![]),
-        (PrestoFloat(_), PrestoFloat(_)) => Ok(vec!{}),
+        (PrestoFloat(_), PrestoFloat(_)) => Ok(vec![]),
         (Varchar, Varchar) => Ok(vec![]),
         (Tuple(t1), Tuple(t2)) => {
             if t1.len() != t2.len() {
                 Err(Error::InvalidPrestoType)
             } else {
-                t1.iter().zip(t2.iter())
-                    .map(|(l, r)| extract(l, r))
-                    .try_fold(vec![], |mut map, r| {
-                        let r = r?;
-                        map.extend(r);
-                        Ok(map)
-                    })
+                t1.lazy_zip(t2)
+                    .lazy_map(|(l, r)| extract(l, r))
+                    .try_fold(vec![], |map, r| Ok(map.chain(r?)))
             }
         }
         (Row(t1), Row(t2)) => {
@@ -135,38 +131,21 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
                 Err(Error::InvalidPrestoType)
             } else {
                 // create a vector of the original element's reference
-                let mut t1k: Vec<_> = t1.iter().collect();
-                t1k.sort_by(|t1, t2| t1.0.cmp(&t2.0));
-                let mut t2k: Vec<_> = t2.iter().collect();
-                t2k.sort_by(|t1, t2| t1.0.cmp(&t2.0));
+                let t1k = t1.sorted_by(|t1, t2| Ord::cmp(&t1.0, &t2.0));
+                let t2k = t2.sorted_by(|t1, t2| Ord::cmp(&t1.0, &t2.0));
 
                 let mut ret = t1k
-                    .iter()
-                    .zip(t2k.iter())
-                    .map(|(l, r)| {
-                      if l.0 == r.0  {
-                          extract(&l.1, &r.1)
-                      } else {
-                          Err(Error::InvalidPrestoType)
-                      }
-                    })
-                    .try_fold(vec![], |mut map, r| {
-                        let r = r?;
-                        map.extend(r);
-                        Ok(map)
-                    })?;
-
-                let mut map = Vec::with_capacity(t2.len());
-                for (provided, _) in t2 {
-                    for (i, (target, _)) in t1.iter().enumerate() {
-                        if provided == target {
-                            map.push(i);
-                            break;
+                    .lazy_zip(t2k)
+                    .lazy_map(|(l, r)| {
+                        if l.0 == r.0 {
+                            extract(&l.1, &r.1)
+                        } else {
+                            Err(Error::InvalidPrestoType)
                         }
-                    }
-                }
-                assert_eq!(map.len(), t2.len());
+                    })
+                    .try_fold(vec![], |map, r| Ok(map.chain(r?)))?;
 
+                let map = t2.map(|provided| t1.position(|target| provided.0 == target.0).unwrap());
                 let key = provided as *const PrestoTy as usize;
                 ret.push((key, map));
 
@@ -174,12 +153,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
             }
         }
         (Array(t1), Array(t2)) => extract(t1, t2),
-        (Map(t1k, t1v), Map(t2k, t2v)) =>  {
-            let mut l = extract(t1k, t2k)?;
-            let r = extract(t1v, t2v)?;
-            l.extend(r);
-            Ok(l)
-        }
+        (Map(t1k, t1v), Map(t2k, t2v)) => Ok(extract(t1k, t2k)?.chain(extract(t1v, t2v)?)),
         _ => Err(Error::InvalidPrestoType),
     }
 }
@@ -354,23 +328,19 @@ impl PrestoTy {
             PrestoFloat(_) => vec![],
             Varchar => vec![ClientTypeSignatureParameter::LongLiteral(2147483647)],
             Tuple(ts) => ts
-                .into_iter()
                 .map(|ty| {
                     ClientTypeSignatureParameter::NamedTypeSignature(NamedTypeSignature {
                         field_name: None,
                         type_signature: ty.into_type_signature(),
                     })
-                })
-                .collect(),
+                }),
             Row(ts) => ts
-                .into_iter()
                 .map(|(name, ty)| {
                     ClientTypeSignatureParameter::NamedTypeSignature(NamedTypeSignature {
                         field_name: Some(RowFieldName::new(name)),
                         type_signature: ty.into_type_signature(),
                     })
-                })
-                .collect(),
+                }),
             Array(t) => vec![ClientTypeSignatureParameter::TypeSignature(
                 t.into_type_signature(),
             )],
@@ -400,14 +370,13 @@ impl PrestoTy {
             Tuple(ts) => format!(
                 "{}({})",
                 RawPrestoTy::Row.to_str(),
-                ts.iter().map(|ty| ty.full_type()).join(",")
+                ts.lazy_map(|ty| ty.full_type()).join(",")
             )
             .into(),
             Row(ts) => format!(
                 "{}({})",
                 RawPrestoTy::Row.to_str(),
-                ts.iter()
-                    .map(|(name, ty)| format!("{} {}", name, ty.full_type()))
+                ts.lazy_map(|(name, ty)| format!("{} {}", name, ty.full_type()))
                     .join(",")
             )
             .into(),

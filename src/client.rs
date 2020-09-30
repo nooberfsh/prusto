@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use async_stream::try_stream;
 use futures::Stream;
 use http::uri::Scheme;
-use itertools::Itertools;
+use iterable::*;
 use reqwest::header::HeaderMap;
 use reqwest::header::HeaderValue;
 use reqwest::Url;
@@ -184,8 +184,8 @@ impl ClientBuilder {
             let v = self
                 .session
                 .session_properties
-                .iter()
-                .map(|(k, v)| format!("{}={}", k, v))
+                .by_ref()
+                .lazy_map(|(k, v)| format!("{}={}", k, v))
                 .join(",");
             headers.insert(
                 HEADER_SESSION,
