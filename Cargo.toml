@@ -22,7 +22,7 @@ bigdecimal = "0.1"
 thiserror = "1.0"
 async-stream  = "0.2"
 chrono = "0.4"
-iterable = "0.3.0"
+iterable = "0.4.0"
 
 [dev-dependencies]
 trybuild = "1.0"
