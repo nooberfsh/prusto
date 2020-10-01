@@ -14,10 +14,10 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
-members = [".", "macros"]
+members = [".", "prusto-macros"]
 
 [dependencies]
-macros = { version = "0.1", path = "./macros"}
+macros = { version = "0.1", path = "prusto-macros", package = "prusto-macros"}
 reqwest = { version = "0.10", features = ["json"]}
 futures = "0.3"
 http = "0.2"
