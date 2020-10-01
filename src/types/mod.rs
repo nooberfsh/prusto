@@ -132,15 +132,13 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
                 let t1k = t1.sorted_by(|t1, t2| Ord::cmp(&t1.0, &t2.0));
                 let t2k = t2.sorted_by(|t1, t2| Ord::cmp(&t1.0, &t2.0));
 
-                let ret = t1k
-                    .lazy_zip(t2k)
-                    .try_flat_map(|(l, r)| {
-                        if l.0 == r.0 {
-                            extract(&l.1, &r.1)
-                        } else {
-                            Err(Error::InvalidPrestoType)
-                        }
-                    })?;
+                let ret = t1k.lazy_zip(t2k).try_flat_map(|(l, r)| {
+                    if l.0 == r.0 {
+                        extract(&l.1, &r.1)
+                    } else {
+                        Err(Error::InvalidPrestoType)
+                    }
+                })?;
 
                 let map = t2.map(|provided| t1.position(|target| provided.0 == target.0).unwrap());
                 let key = provided as *const PrestoTy as usize;
@@ -306,20 +304,18 @@ impl PrestoTy {
             PrestoInt(_) => vec![],
             PrestoFloat(_) => vec![],
             Varchar => vec![ClientTypeSignatureParameter::LongLiteral(2147483647)],
-            Tuple(ts) => ts
-                .map(|ty| {
-                    ClientTypeSignatureParameter::NamedTypeSignature(NamedTypeSignature {
-                        field_name: None,
-                        type_signature: ty.into_type_signature(),
-                    })
-                }),
-            Row(ts) => ts
-                .map(|(name, ty)| {
-                    ClientTypeSignatureParameter::NamedTypeSignature(NamedTypeSignature {
-                        field_name: Some(RowFieldName::new(name)),
-                        type_signature: ty.into_type_signature(),
-                    })
-                }),
+            Tuple(ts) => ts.map(|ty| {
+                ClientTypeSignatureParameter::NamedTypeSignature(NamedTypeSignature {
+                    field_name: None,
+                    type_signature: ty.into_type_signature(),
+                })
+            }),
+            Row(ts) => ts.map(|(name, ty)| {
+                ClientTypeSignatureParameter::NamedTypeSignature(NamedTypeSignature {
+                    field_name: Some(RowFieldName::new(name)),
+                    type_signature: ty.into_type_signature(),
+                })
+            }),
             Array(t) => vec![ClientTypeSignatureParameter::TypeSignature(
                 t.into_type_signature(),
             )],
