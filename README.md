@@ -3,6 +3,18 @@
 A [presto](https://prestosql.io/) client library written in rust.
 
 
+## Prerequisites
+ - latest rust nightly compiler
+ 
+
+## Installation 
+
+```toml
+# Cargo.toml
+[dependencies]
+prusto = "0.1"
+```
+
 ## Example
 
 ```rust
