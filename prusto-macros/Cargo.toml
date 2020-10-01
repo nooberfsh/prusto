@@ -3,6 +3,12 @@ name = "prusto-macros"
 version = "0.1.0"
 authors = ["nooberfsh <nooberfsh@gmail.com>"]
 edition = "2018"
+description = "prusto macros"
+license = "MIT"
+repository = "https://github.com/nooberfsh/prusto"
+homepage = "https://github.com/nooberfsh/prusto"
+documentation = "https://docs.rs/prusto"
+keywords = ["presto", "prestosql"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
