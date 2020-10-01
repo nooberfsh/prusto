@@ -107,7 +107,7 @@ enum Field {
     Data,
 }
 
-const FIELDS: &'static [&'static str] = &["columns", "data"];
+const FIELDS: &[&str] = &["columns", "data"];
 
 impl<'de, T: Presto> Deserialize<'de> for DataSet<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

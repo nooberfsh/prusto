@@ -59,7 +59,7 @@ impl<'a, 'de, T: Presto> Visitor<'de> for OptionSeed<'a, T> {
         D: Deserializer<'de>,
     {
         let seed = T::seed(self.ctx);
-        seed.deserialize(deserializer).map(|t| Some(t))
+        seed.deserialize(deserializer).map(Some)
     }
 }
 

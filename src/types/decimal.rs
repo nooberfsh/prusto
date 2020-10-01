@@ -53,7 +53,7 @@ impl<'de, const P: usize, const S: usize> DeserializeSeed<'de> for DecimalSeed<P
         D: Deserializer<'de>,
     {
         let s = <&'de str as Deserialize<'de>>::deserialize(deserializer)?;
-        let d = bigdecimal::BigDecimal::from_str(s).map_err(|e| de::Error::custom(e))?;
+        let d = bigdecimal::BigDecimal::from_str(s).map_err(de::Error::custom)?;
 
         Ok(Decimal { inner: d })
     }

@@ -128,10 +128,8 @@ impl ClientBuilder {
             .timeout(std::time::Duration::from_secs(self.request_timeout))
             .build()
             .unwrap();
-        if let Some(_) = &self.auth {
-            if self.http_scheme == Scheme::HTTP {
-                return Err(Error::BasicAuthWithHttp);
-            }
+        if self.auth.is_some() && self.http_scheme == Scheme::HTTP {
+            return Err(Error::BasicAuthWithHttp);
         }
         let cli = Client {
             session: self.session,
@@ -200,7 +198,7 @@ impl ClientBuilder {
 
         if let Some(d) = &self.session.http_headers {
             for (k, v) in d {
-                if let Some(_) = headers.insert(k, v.clone()) {
+                if headers.insert(k, v.clone()).is_some() {
                     return Err(Error::DuplicateHeader(k.clone()));
                 }
             }
