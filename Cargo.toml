@@ -17,7 +17,7 @@ readme = "README.md"
 members = [".", "macros"]
 
 [dependencies]
-macros = {path = "./macros"}
+macros = { version = "0.1", path = "./macros"}
 reqwest = { version = "0.10", features = ["json"]}
 futures = "0.3"
 http = "0.2"
