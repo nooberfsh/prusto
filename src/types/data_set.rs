@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 use serde::de::{self, Deserializer, MapAccess, Visitor};
 use serde::ser::{SerializeStruct, Serializer};
 use serde::{Deserialize, Serialize};
+use iterable::Iterable;
 
 use super::util::SerializeIterator;
 use super::{Context, Error, Presto, PrestoTy, VecSeed};
@@ -80,13 +81,11 @@ impl<T: Presto> Serialize for DataSet<T> {
         let columns = self
             .types
             .clone()
-            .into_iter()
             .map(|(name, ty)| Column {
                 name,
                 ty: ty.full_type().into_owned(),
                 type_signature: Some(ty.into_type_signature()),
-            })
-            .collect::<Vec<_>>();
+            });
 
         let data = SerializeIterator {
             iter: self.data.iter().map(|d| d.value()),
@@ -129,17 +128,12 @@ impl<'de, T: Presto> Deserialize<'de> for DataSet<T> {
             {
                 let types = if let Some(Field::Columns) = map.next_key()? {
                     let columns: Vec<Column> = map.next_value()?;
-                    let mut types = vec![];
-                    for column in columns {
-                        let ty = PrestoTy::from_column(column).map_err(|e| {
-                            de::Error::custom(format!(
-                                "deserialize presto type failed, reason: {}",
-                                e
-                            ))
-                        })?;
-                        types.push(ty);
-                    }
-                    types
+                    columns.try_map(PrestoTy::from_column).map_err(|e| {
+                        de::Error::custom(format!(
+                            "deserialize presto type failed, reason: {}",
+                            e
+                        ))
+                    })?
                 } else {
                     return Err(de::Error::missing_field("columns"));
                 };

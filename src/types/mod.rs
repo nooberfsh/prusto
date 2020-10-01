@@ -121,9 +121,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
             if t1.len() != t2.len() {
                 Err(Error::InvalidPrestoType)
             } else {
-                t1.lazy_zip(t2)
-                    .lazy_map(|(l, r)| extract(l, r))
-                    .try_fold(vec![], |map, r| Ok(map.chain(r?)))
+                t1.lazy_zip(t2).try_flat_map(|(l, r)| extract(l, r))
             }
         }
         (Row(t1), Row(t2)) => {
@@ -134,22 +132,19 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
                 let t1k = t1.sorted_by(|t1, t2| Ord::cmp(&t1.0, &t2.0));
                 let t2k = t2.sorted_by(|t1, t2| Ord::cmp(&t1.0, &t2.0));
 
-                let mut ret = t1k
+                let ret = t1k
                     .lazy_zip(t2k)
-                    .lazy_map(|(l, r)| {
+                    .try_flat_map(|(l, r)| {
                         if l.0 == r.0 {
                             extract(&l.1, &r.1)
                         } else {
                             Err(Error::InvalidPrestoType)
                         }
-                    })
-                    .try_fold(vec![], |map, r| Ok(map.chain(r?)))?;
+                    })?;
 
                 let map = t2.map(|provided| t1.position(|target| provided.0 == target.0).unwrap());
                 let key = provided as *const PrestoTy as usize;
-                ret.push((key, map));
-
-                Ok(ret)
+                Ok(ret.add_one((key, map)))
             }
         }
         (Array(t1), Array(t2)) => extract(t1, t2),
@@ -246,40 +241,29 @@ impl PrestoTy {
                 }
             }
             RawPrestoTy::Row if !sig.arguments.is_empty() => {
-                let mut ir = Vec::with_capacity(sig.arguments.len());
-                for arg in sig.arguments {
-                    match arg {
-                        ClientTypeSignatureParameter::NamedTypeSignature(sig) => {
-                            let name = sig.field_name.map(|n| n.name);
-                            let ty = Self::from_type_signature(sig.type_signature)?;
-                            ir.push((name, ty));
-                        }
-                        _ => return Err(Error::InvalidTypeSignature),
+                let ir = sig.arguments.try_map(|arg| match arg {
+                    ClientTypeSignatureParameter::NamedTypeSignature(sig) => {
+                        let name = sig.field_name.map(|n| n.name);
+                        let ty = Self::from_type_signature(sig.type_signature)?;
+                        Ok((name, ty))
                     }
-                }
+                    _ => Err(Error::InvalidTypeSignature),
+                })?;
 
                 let is_named = ir[0].0.is_some();
 
                 if is_named {
-                    let mut ret = Vec::with_capacity(ir.len());
-                    for (name, ty) in ir {
-                        if let Some(n) = name {
-                            ret.push((n, ty))
-                        } else {
-                            return Err(Error::InvalidTypeSignature);
-                        }
-                    }
-                    PrestoTy::Row(ret)
+                    let row = ir.try_map(|(name, ty)| match name {
+                        Some(n) => Ok((n, ty)),
+                        None => Err(Error::InvalidTypeSignature),
+                    })?;
+                    PrestoTy::Row(row)
                 } else {
-                    let mut ret = Vec::with_capacity(ir.len());
-                    for (name, ty) in ir {
-                        if let Some(_) = name {
-                            return Err(Error::InvalidTypeSignature);
-                        } else {
-                            ret.push(ty)
-                        }
-                    }
-                    PrestoTy::Tuple(ret)
+                    let tuple = ir.try_map(|(name, ty)| match name {
+                        Some(_) => Err(Error::InvalidTypeSignature),
+                        None => Ok(ty),
+                    })?;
+                    PrestoTy::Tuple(tuple)
                 }
             }
             _ => return Err(Error::InvalidTypeSignature),
@@ -299,13 +283,8 @@ impl PrestoTy {
     }
 
     pub fn from_columns(columns: Vec<Column>) -> Result<Self, Error> {
-        let mut ret = Vec::with_capacity(columns.len());
-        for column in columns {
-            let (name, ty) = Self::from_column(column)?;
-            ret.push((name, ty));
-        }
-
-        Ok(PrestoTy::Row(ret))
+        let row = columns.try_map(Self::from_column)?;
+        Ok(PrestoTy::Row(row))
     }
 
     pub fn into_type_signature(self) -> TypeSignature {
