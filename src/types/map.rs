@@ -13,6 +13,7 @@ use super::{Context, Presto, PrestoMapKey, PrestoTy};
 macro_rules! gen_map {
     ($ty:ident < $($bound:ident ),* >,  $seed:ident) => {
         // TODO: remove 'static for K V
+        // workaround: add 'static bound to avoid compile error, compiler version: rustc 1.49.0-nightly (3525087ad 2020-10-08)
         // error[E0309]: the parameter type `K` may not live long enough
         //   --> src/types/map.rs:16:34
         //    |
