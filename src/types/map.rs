@@ -12,7 +12,20 @@ use super::{Context, Presto, PrestoMapKey, PrestoTy};
 
 macro_rules! gen_map {
     ($ty:ident < $($bound:ident ),* >,  $seed:ident) => {
-        impl<K: PrestoMapKey + $($bound+)*, V: Presto> Presto for $ty<K, V> {
+        // TODO: remove 'static for K V
+        // error[E0309]: the parameter type `K` may not live long enough
+        //   --> src/types/map.rs:16:34
+        //    |
+        // 16 |             type ValueType<'a> = impl Serialize;
+        //    |                                  ^^^^^^^^^^^^^^
+        // ...
+        // 93 | gen_map!(BTreeMap<Ord>, BTreeMapSeed);
+        //    | -------------------------------------- in this macro invocation
+        //    |
+        //    = help: consider adding an explicit lifetime bound `K: 'a`...
+        //    = note: ...so that the type `K` will meet its required lifetime bounds
+        //    = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
+        impl<K: 'static + PrestoMapKey + $($bound+)*, V: 'static + Presto> Presto for $ty<K, V> {
             type ValueType<'a> = impl Serialize;
             type Seed<'a, 'de> = $seed<'a, K, V>;
 
