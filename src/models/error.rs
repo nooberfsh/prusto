@@ -10,7 +10,7 @@ pub struct QueryError {
     pub error_code: i32,
     pub error_name: String,
     pub error_type: String,
-    pub error_location: ErrorLocation,
+    pub error_location: Option<ErrorLocation>,
     pub failure_info: FailureInfo,
 }
 
@@ -41,7 +41,9 @@ impl fmt::Display for QueryError {
         }
         writeln!(f, "error_code: {}", self.error_code)?;
         writeln!(f, "error_type: {}", self.error_name)?;
-        writeln!(f, "error_location: {}", self.error_location)?;
+        if let Some(loc) = &self.error_location {
+            writeln!(f, "error_location: {}", loc)?;
+        }
         writeln!(f, "failure_info: {}", self.failure_info)
     }
 }
