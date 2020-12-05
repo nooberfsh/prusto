@@ -49,6 +49,10 @@ impl<T: Presto> DataSet<T> {
         self.data.len()
     }
 
+    pub fn as_slice(&self) -> &[T] {
+        self.data.as_slice()
+    }
+
     pub(crate) fn merge(&mut self, other: DataSet<T>) {
         self.data.extend(other.data)
     }
