@@ -45,6 +45,10 @@ impl<T: Presto> DataSet<T> {
         self.data.is_empty()
     }
 
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
     pub(crate) fn merge(&mut self, other: DataSet<T>) {
         self.data.extend(other.data)
     }
