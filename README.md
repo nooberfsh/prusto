@@ -12,7 +12,7 @@ A [presto](https://prestosql.io/) client library written in rust.
 ```toml
 # Cargo.toml
 [dependencies]
-prusto = "0.1"
+prusto = "0.2"
 ```
 
 ## Example
