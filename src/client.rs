@@ -7,7 +7,7 @@ use iterable::*;
 use reqwest::header::HeaderMap;
 use reqwest::header::HeaderValue;
 use reqwest::Url;
-use tokio::time::{delay_for, Duration};
+use tokio::time::{sleep, Duration};
 
 use crate::error::{Error, Result};
 use crate::header::*;
@@ -230,7 +230,7 @@ macro_rules! retry {
                 },
                 Err(e) => match e.status() {
                     Some(code) if code == 503 => {
-                        delay_for(Duration::from_millis(100)).await;
+                        sleep(Duration::from_millis(100)).await;
                         continue;
                     }
                     _ => return Err(Error::HttpError(e)),
