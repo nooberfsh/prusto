@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
-use async_stream::try_stream;
-use futures::Stream;
 use http::uri::Scheme;
 use iterable::*;
 use reqwest::header::HeaderMap;
 use reqwest::header::HeaderValue;
 use reqwest::Url;
 use tokio::time::{sleep, Duration};
+use futures_async_stream::try_stream;
 
 use crate::error::{Error, Result};
 use crate::header::*;
@@ -243,23 +242,18 @@ macro_rules! retry {
 }
 
 impl Client {
-    pub fn get_stream<T: Presto + Unpin + 'static>(
-        &self,
-        sql: String,
-    ) -> impl Stream<Item = Result<DataSet<T>>> + '_ {
-        try_stream! {
-            let res = self.get_retry::<T>(sql).await?;
-            if let Some(e) = res.error {
-                Err(Error::QueryError(e))?;
-            } else {
-                let mut next = res.next_uri;
-                while let Some(url) = next {
-                    let res = self.get_next_retry(&url).await?;
-                    next = res.next_uri;
-
-                    if let Some(d)  = res.data_set {
-                        yield d
-                    }
+    #[try_stream(ok = DataSet<T>, error = Error)]
+    pub async fn get_stream<T: Presto + Unpin + 'static>(&self, sql: String) {
+        let res = self.get_retry::<T>(sql).await?;
+        if let Some(e) = res.error {
+            Err(Error::QueryError(e))?;
+        } else {
+            let mut next = res.next_uri;
+            while let Some(url) = next {
+                let res = self.get_next_retry(&url).await?;
+                next = res.next_uri;
+                if let Some(d)  = res.data_set {
+                    yield d
                 }
             }
         }

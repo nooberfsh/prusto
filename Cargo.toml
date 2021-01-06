@@ -28,9 +28,9 @@ thiserror = "1.0"
 chrono = "0.4"
 iterable = "0.4.0"
 # network dependencies
-async-stream  = "0.2"
 reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "json"]}
 futures = "0.3"
+futures-async-stream = "0.2"
 http = "0.2"
 tokio = { version = "1.0", features = ["full"]}
 
