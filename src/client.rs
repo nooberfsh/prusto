@@ -26,13 +26,19 @@ pub struct Client {
 
 #[derive(Clone, Debug)]
 pub enum Auth {
-    Basic(String, String),
+    Basic(String, Option<String>),
 }
 
 pub struct ClientBuilder {
     session: SessionBuilder,
     auth: Option<Auth>,
     max_attempt: usize,
+}
+
+impl Auth {
+    pub fn new_basic(username: impl ToString, password: Option<impl ToString>) -> Auth {
+        Auth::Basic(username.to_string(), password.map(|p|p.to_string()))
+    }
 }
 
 impl ClientBuilder {
@@ -169,22 +175,29 @@ fn add_prepare_header(mut builder: RequestBuilder, session: &Session) -> Request
 }
 
 fn add_session_header(mut builder: RequestBuilder, session: &Session) -> RequestBuilder {
+    builder = add_prepare_header(builder, session);
     builder = builder.header(HEADER_SOURCE, &session.source);
+
     if let Some(v) = &session.trace_token {
         builder = builder.header(HEADER_TRACE_TOKEN, v);
     }
+
     if !session.client_tags.is_empty() {
         builder = builder.header(HEADER_CLIENT_TAGS, session.client_tags.by_ref().join(","));
     }
+
     if let Some(v) = &session.client_info {
         builder = builder.header(HEADER_CLIENT_INFO, v);
     }
+
     if let Some(v) = &session.catalog {
         builder = builder.header(HEADER_CATALOG, v);
     }
+
     if let Some(v) = &session.schema {
         builder = builder.header(HEADER_SCHEMA, v);
     }
+
     if let Some(v) = &session.path {
         builder = builder.header(HEADER_PATH, v);
     }
@@ -293,7 +306,7 @@ impl Client {
 
         let req = if let Some(auth) = self.auth.as_ref() {
             match auth {
-                Auth::Basic(u, p) => req.basic_auth(u, Some(p)),
+                Auth::Basic(u, p) => req.basic_auth(u, p.as_ref()),
             }
         } else {
             req
@@ -307,9 +320,10 @@ impl Client {
         &self,
         url: &str,
     ) -> std::result::Result<QueryResult<T>, reqwest::Error> {
-        let data = self
-            .client
-            .get(url)
+        let req = self.client.get(url);
+        let req = add_prepare_header(req, &self.session);
+
+        let data = req
             .send()
             .await?
             .json::<QueryResult<T>>()
