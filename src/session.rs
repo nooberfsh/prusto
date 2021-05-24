@@ -1,15 +1,15 @@
 use std::collections::{HashMap, HashSet};
-use std::time::Duration;
 use std::default::default;
+use std::time::Duration;
 
-use reqwest::Url;
 use http::uri::Scheme;
+use reqwest::Url;
 
-use crate::transaction::TransactionId;
 use crate::error::*;
+use crate::transaction::TransactionId;
 
 #[derive(Debug)]
-pub struct Session  {
+pub struct Session {
     pub url: Url,
     pub user: String,
     pub source: String,
@@ -24,14 +24,14 @@ pub struct Session  {
     pub properties: HashMap<String, String>,
     pub prepared_statements: HashMap<String, String>,
     // TODO: add roles
-    pub extra_credentials:  HashMap<String, String>,
+    pub extra_credentials: HashMap<String, String>,
     pub transaction_id: TransactionId,
     pub client_request_timeout: Duration,
     pub compression_disabled: bool,
 }
 
 #[derive(Debug)]
-pub(crate) struct SessionBuilder  {
+pub(crate) struct SessionBuilder {
     pub(crate) host: String,
     pub(crate) port: u16,
     pub(crate) secure: bool,
@@ -48,7 +48,7 @@ pub(crate) struct SessionBuilder  {
     pub(crate) properties: HashMap<String, String>,
     pub(crate) prepared_statements: HashMap<String, String>,
     // TODO: add roles
-    pub(crate) extra_credentials:  HashMap<String, String>,
+    pub(crate) extra_credentials: HashMap<String, String>,
     pub(crate) transaction_id: TransactionId,
     pub(crate) client_request_timeout: Duration,
     pub(crate) compression_disabled: bool,
@@ -79,12 +79,13 @@ impl SessionBuilder {
     }
 
     pub fn build(self) -> Result<Session> {
-        let scheme = if self.secure {Scheme::HTTPS} else {Scheme::HTTP};
+        let scheme = if self.secure {
+            Scheme::HTTPS
+        } else {
+            Scheme::HTTP
+        };
         let host = self.host;
-        let s = format!(
-            "{}://{}:{}/v1/statement",
-            scheme, host, self.port
-        );
+        let s = format!("{}://{}:{}/v1/statement", scheme, host, self.port);
         let url = Url::parse(&s).map_err(|_| Error::InvalidHost(host))?;
         let ret = Session {
             url,
@@ -92,14 +93,14 @@ impl SessionBuilder {
             source: self.source,
             trace_token: self.trace_token,
             client_tags: self.client_tags,
-            client_info:self.client_info,
+            client_info: self.client_info,
             catalog: self.catalog,
             schema: self.schema,
             path: self.path,
             resource_estimates: self.resource_estimates,
             properties: self.properties,
             prepared_statements: self.prepared_statements,
-            extra_credentials:  self.extra_credentials,
+            extra_credentials: self.extra_credentials,
             transaction_id: self.transaction_id,
             client_request_timeout: self.client_request_timeout,
             compression_disabled: self.compression_disabled,

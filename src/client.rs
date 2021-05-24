@@ -1,16 +1,16 @@
 use std::collections::{HashMap, HashSet};
 
+use futures_async_stream::try_stream;
+use http::header::{ACCEPT_ENCODING, USER_AGENT};
 use iterable::*;
 use reqwest::RequestBuilder;
 use tokio::time::{sleep, Duration};
-use futures_async_stream::try_stream;
-use http::header::{USER_AGENT, ACCEPT_ENCODING};
 
 use crate::error::{Error, Result};
 use crate::header::*;
+use crate::session::{Session, SessionBuilder};
 use crate::transaction::TransactionId;
 use crate::{DataSet, Presto, QueryResult};
-use crate::session::{Session, SessionBuilder};
 
 // TODO:
 // allow_redirects
@@ -37,7 +37,7 @@ pub struct ClientBuilder {
 
 impl Auth {
     pub fn new_basic(username: impl ToString, password: Option<impl ToString>) -> Auth {
-        Auth::Basic(username.to_string(), password.map(|p|p.to_string()))
+        Auth::Basic(username.to_string(), password.map(|p| p.to_string()))
     }
 }
 
@@ -203,17 +203,29 @@ fn add_session_header(mut builder: RequestBuilder, session: &Session) -> Request
     }
     // TODO: add timezone and locale
     builder = add_header_map(builder, HEADER_SESSION, &session.properties);
-    builder = add_header_map(builder, HEADER_RESOURCE_ESTIMATE, &session.resource_estimates);
+    builder = add_header_map(
+        builder,
+        HEADER_RESOURCE_ESTIMATE,
+        &session.resource_estimates,
+    );
     // TODO: add roles
     builder = add_header_map(builder, HEADER_EXTRA_CREDENTIAL, &session.extra_credentials);
-    builder = add_header_map(builder, HEADER_PREPARED_STATEMENT, &session.prepared_statements);
+    builder = add_header_map(
+        builder,
+        HEADER_PREPARED_STATEMENT,
+        &session.prepared_statements,
+    );
     builder = builder.header(HEADER_TRANSACTION, session.transaction_id.to_str());
     builder = builder.header(HEADER_CLIENT_CAPABILITIES, "PATH,PARAMETRIC_DATETIME");
     builder
 }
 
-fn add_header_map(mut builder: RequestBuilder, header: &str, map: &HashMap<String, String>) -> RequestBuilder {
-    for (k,v) in map {
+fn add_header_map(
+    mut builder: RequestBuilder,
+    header: &str,
+    map: &HashMap<String, String>,
+) -> RequestBuilder {
+    for (k, v) in map {
         let kv = format!("{}={}", k, urlencoding::encode(v));
         builder = builder.header(header, kv);
     }
@@ -255,7 +267,7 @@ impl Client {
             while let Some(url) = next {
                 let res = self.get_next_retry(&url).await?;
                 next = res.next_uri;
-                if let Some(d)  = res.data_set {
+                if let Some(d) = res.data_set {
                     yield d
                 }
             }
@@ -297,10 +309,7 @@ impl Client {
         &self,
         sql: String,
     ) -> std::result::Result<QueryResult<T>, reqwest::Error> {
-        let req = self
-            .client
-            .post(self.session.url.clone())
-            .body(sql);
+        let req = self.client.post(self.session.url.clone()).body(sql);
 
         let req = add_session_header(req, &self.session);
 
@@ -323,11 +332,7 @@ impl Client {
         let req = self.client.get(url);
         let req = add_prepare_header(req, &self.session);
 
-        let data = req
-            .send()
-            .await?
-            .json::<QueryResult<T>>()
-            .await?;
+        let data = req.send().await?.json::<QueryResult<T>>().await?;
         Ok(data)
     }
 }

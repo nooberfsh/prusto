@@ -9,9 +9,9 @@ pub mod client;
 pub mod error;
 mod header;
 pub mod models;
+pub mod session;
 pub mod transaction;
 pub mod types;
-pub mod session;
 
 pub use client::*;
 pub use macros::*;
