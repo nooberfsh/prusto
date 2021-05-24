@@ -31,6 +31,8 @@ pub enum Error {
     EmptyData,
     #[error("reach max attempt: {0}")]
     ReachMaxAttempt(usize),
+    #[error("invalid host: {0}")]
+    InvalidHost(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

@@ -1,77 +1,77 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use http::uri::Scheme;
 use iterable::*;
-use reqwest::header::HeaderMap;
-use reqwest::header::HeaderValue;
-use reqwest::Url;
+use reqwest::RequestBuilder;
 use tokio::time::{sleep, Duration};
 use futures_async_stream::try_stream;
+use http::header::{USER_AGENT, ACCEPT_ENCODING};
 
 use crate::error::{Error, Result};
 use crate::header::*;
 use crate::transaction::TransactionId;
 use crate::{DataSet, Presto, QueryResult};
+use crate::session::{Session, SessionBuilder};
 
 // TODO:
 // allow_redirects
 // proxies
 // cancel
 
+pub struct Client {
+    client: reqwest::Client,
+    session: Session,
+    auth: Option<Auth>,
+    max_attempt: usize,
+}
+
 #[derive(Clone, Debug)]
 pub enum Auth {
     Basic(String, String),
 }
 
-pub struct ClientSession {
-    user: String,
-    source: String,
-    catalog: Option<String>,
-    schema: Option<String>,
-    session_properties: HashMap<String, String>,
-    http_headers: Option<HeaderMap>,
-    transaction_id: Option<TransactionId>,
-}
-
 pub struct ClientBuilder {
-    host: String,
-    port: u16,
-    session: ClientSession,
-    http_scheme: Scheme,
+    session: SessionBuilder,
     auth: Option<Auth>,
     max_attempt: usize,
-    request_timeout: u64, // in seconds
 }
 
 impl ClientBuilder {
     pub fn new(user: impl ToString, host: impl ToString) -> Self {
-        let session = ClientSession {
-            user: user.to_string(),
-            source: "presto-python-client".to_string(),
-            catalog: None,
-            schema: None,
-            session_properties: HashMap::new(),
-            http_headers: None,
-            transaction_id: None,
-        };
+        let builder = SessionBuilder::new(user, host);
         Self {
-            session,
-            host: host.to_string(),
-            port: 8080,                // default
-            http_scheme: Scheme::HTTP, // default is http
+            session: builder,
             auth: None,
-            max_attempt: 3,      // default
-            request_timeout: 30, //default
+            max_attempt: 3,
         }
     }
 
     pub fn port(mut self, s: u16) -> Self {
-        self.port = s;
+        self.session.port = s;
+        self
+    }
+
+    pub fn secure(mut self, s: bool) -> Self {
+        self.session.secure = s;
         self
     }
 
     pub fn source(mut self, s: impl ToString) -> Self {
         self.session.source = s.to_string();
+        self
+    }
+
+    pub fn trace_token(mut self, s: impl ToString) -> Self {
+        self.session.trace_token = Some(s.to_string());
+        self
+    }
+
+    pub fn client_tags(mut self, s: HashSet<String>) -> Self {
+        self.session.client_tags = s;
+        self
+    }
+
+    pub fn client_info(mut self, s: impl ToString) -> Self {
+        self.session.client_info = Some(s.to_string());
         self
     }
 
@@ -85,25 +85,48 @@ impl ClientBuilder {
         self
     }
 
-    pub fn session_properties(mut self, s: HashMap<String, String>) -> Self {
-        self.session.session_properties = s;
+    pub fn path(mut self, s: impl ToString) -> Self {
+        self.session.path = Some(s.to_string());
         self
     }
 
-    pub fn http_headers(mut self, s: HeaderMap) -> Self {
-        self.session.http_headers = Some(s);
+    pub fn resource_estimates(mut self, s: HashMap<String, String>) -> Self {
+        self.session.resource_estimates = s;
+        self
+    }
+
+    pub fn properties(mut self, s: HashMap<String, String>) -> Self {
+        self.session.properties = s;
+        self
+    }
+
+    pub fn prepared_statements(mut self, s: HashMap<String, String>) -> Self {
+        self.session.prepared_statements = s;
+        self
+    }
+
+    pub fn extra_credentials(mut self, s: HashMap<String, String>) -> Self {
+        self.session.extra_credentials = s;
         self
     }
 
     pub fn transaction_id(mut self, s: TransactionId) -> Self {
-        self.session.transaction_id = Some(s);
+        self.session.transaction_id = s;
         self
     }
 
-    pub fn http_scheme(mut self, s: Scheme) -> Self {
-        self.http_scheme = s;
+    pub fn client_request_timeout(mut self, s: Duration) -> Self {
+        self.session.client_request_timeout = s;
         self
     }
+
+    pub fn compression_disabled(mut self, s: bool) -> Self {
+        self.session.compression_disabled = s;
+        self
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
     pub fn auth(mut self, s: Auth) -> Self {
         self.auth = Some(s);
         self
@@ -114,107 +137,74 @@ impl ClientBuilder {
         self
     }
 
-    pub fn request_timeout(mut self, s: u64) -> Self {
-        self.request_timeout = s;
-        self
-    }
-
     pub fn build(self) -> Result<Client> {
-        let statement_url = self.statement_url();
-        let http_headers = self.headers()?;
+        let session = self.session.build()?;
         let max_attempt = self.max_attempt;
         let client = reqwest::ClientBuilder::new()
-            .timeout(std::time::Duration::from_secs(self.request_timeout))
+            .timeout(session.client_request_timeout)
             .build()
             .unwrap();
-        if self.auth.is_some() && self.http_scheme == Scheme::HTTP {
+        if self.auth.is_some() && session.url.scheme() == "http" {
             return Err(Error::BasicAuthWithHttp);
         }
         let cli = Client {
-            session: self.session,
             auth: self.auth,
+            session,
             client,
-            http_headers,
-            statement_url,
             max_attempt,
         };
 
         Ok(cli)
     }
-
-    fn statement_url(&self) -> Url {
-        let s = format!(
-            "{}://{}:{}/v1/statement",
-            self.http_scheme, self.host, self.port
-        );
-        Url::parse(&s).unwrap()
-    }
-
-    fn headers(&self) -> Result<HeaderMap> {
-        use Error::*;
-
-        let mut headers = HeaderMap::new();
-        if let Some(s) = &self.session.catalog {
-            headers.insert(
-                HEADER_CATALOG,
-                HeaderValue::from_str(s).map_err(|_| InvalidCatalog)?,
-            );
-        }
-        if let Some(s) = &self.session.schema {
-            headers.insert(
-                HEADER_SCHEMA,
-                HeaderValue::from_str(s).map_err(|_| InvalidSchema)?,
-            );
-        }
-
-        headers.insert(
-            HEADER_SOURCE,
-            HeaderValue::from_str(&self.session.source).map_err(|_| InvalidSource)?,
-        );
-
-        headers.insert(
-            HEADER_USER,
-            HeaderValue::from_str(&self.session.user).map_err(|_| InvalidUser)?,
-        );
-
-        if !self.session.session_properties.is_empty() {
-            let v = self
-                .session
-                .session_properties
-                .by_ref()
-                .lazy_map(|(k, v)| format!("{}={}", k, v))
-                .join(",");
-            headers.insert(
-                HEADER_SESSION,
-                HeaderValue::from_str(&v).map_err(|_| InvalidProperties)?,
-            );
-        }
-
-        if let Some(d) = &self.session.transaction_id {
-            let s = d.to_str();
-            headers.insert(HEADER_TRANSACTION, HeaderValue::from_static(s));
-        }
-
-        if let Some(d) = &self.session.http_headers {
-            for (k, v) in d {
-                if headers.insert(k, v.clone()).is_some() {
-                    return Err(Error::DuplicateHeader(k.clone()));
-                }
-            }
-        }
-
-        Ok(headers)
-    }
 }
 
-pub struct Client {
-    client: reqwest::Client,
-    #[allow(unused)]
-    session: ClientSession,
-    auth: Option<Auth>,
-    http_headers: HeaderMap,
-    statement_url: Url,
-    max_attempt: usize,
+fn add_prepare_header(mut builder: RequestBuilder, session: &Session) -> RequestBuilder {
+    builder = builder.header(HEADER_USER, &session.user);
+    // TODO: difference with session.source?
+    builder = builder.header(USER_AGENT, "trino-rust-client");
+    if session.compression_disabled {
+        builder = builder.header(ACCEPT_ENCODING, "identity")
+    }
+    builder
+}
+
+fn add_session_header(mut builder: RequestBuilder, session: &Session) -> RequestBuilder {
+    builder = builder.header(HEADER_SOURCE, &session.source);
+    if let Some(v) = &session.trace_token {
+        builder = builder.header(HEADER_TRACE_TOKEN, v);
+    }
+    if !session.client_tags.is_empty() {
+        builder = builder.header(HEADER_CLIENT_TAGS, session.client_tags.by_ref().join(","));
+    }
+    if let Some(v) = &session.client_info {
+        builder = builder.header(HEADER_CLIENT_INFO, v);
+    }
+    if let Some(v) = &session.catalog {
+        builder = builder.header(HEADER_CATALOG, v);
+    }
+    if let Some(v) = &session.schema {
+        builder = builder.header(HEADER_SCHEMA, v);
+    }
+    if let Some(v) = &session.path {
+        builder = builder.header(HEADER_PATH, v);
+    }
+    // TODO: add timezone and locale
+    builder = add_header_map(builder, HEADER_SESSION, &session.properties);
+    builder = add_header_map(builder, HEADER_RESOURCE_ESTIMATE, &session.resource_estimates);
+    // TODO: add roles
+    builder = add_header_map(builder, HEADER_EXTRA_CREDENTIAL, &session.extra_credentials);
+    builder = add_header_map(builder, HEADER_PREPARED_STATEMENT, &session.prepared_statements);
+    builder = builder.header(HEADER_TRANSACTION, session.transaction_id.to_str());
+    builder = builder.header(HEADER_CLIENT_CAPABILITIES, "PATH,PARAMETRIC_DATETIME");
+    builder
+}
+
+fn add_header_map(mut builder: RequestBuilder, header: &str, map: &HashMap<String, String>) -> RequestBuilder {
+    for (k,v) in map {
+        let kv = format!("{}={}", k, urlencoding::encode(v));
+        builder = builder.header(header, kv);
+    }
+    builder
 }
 
 macro_rules! retry {
@@ -296,9 +286,10 @@ impl Client {
     ) -> std::result::Result<QueryResult<T>, reqwest::Error> {
         let req = self
             .client
-            .post(self.statement_url.clone())
-            .headers(self.http_headers.clone())
+            .post(self.session.url.clone())
             .body(sql);
+
+        let req = add_session_header(req, &self.session);
 
         let req = if let Some(auth) = self.auth.as_ref() {
             match auth {
