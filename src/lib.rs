@@ -9,6 +9,7 @@ pub mod client;
 pub mod error;
 mod header;
 pub mod models;
+pub mod selected_role;
 pub mod session;
 pub mod transaction;
 pub mod types;

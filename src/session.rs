@@ -6,6 +6,7 @@ use http::uri::Scheme;
 use reqwest::Url;
 
 use crate::error::*;
+use crate::selected_role::SelectedRole;
 use crate::transaction::TransactionId;
 
 #[derive(Debug)]
@@ -23,7 +24,7 @@ pub struct Session {
     pub resource_estimates: HashMap<String, String>,
     pub properties: HashMap<String, String>,
     pub prepared_statements: HashMap<String, String>,
-    // TODO: add roles
+    pub roles: HashMap<String, SelectedRole>,
     pub extra_credentials: HashMap<String, String>,
     pub transaction_id: TransactionId,
     pub client_request_timeout: Duration,
@@ -47,7 +48,7 @@ pub(crate) struct SessionBuilder {
     pub(crate) resource_estimates: HashMap<String, String>,
     pub(crate) properties: HashMap<String, String>,
     pub(crate) prepared_statements: HashMap<String, String>,
-    // TODO: add roles
+    pub(crate) roles: HashMap<String, SelectedRole>,
     pub(crate) extra_credentials: HashMap<String, String>,
     pub(crate) transaction_id: TransactionId,
     pub(crate) client_request_timeout: Duration,
@@ -71,6 +72,7 @@ impl SessionBuilder {
             resource_estimates: default(),
             properties: default(),
             prepared_statements: default(),
+            roles: default(),
             extra_credentials: default(),
             transaction_id: TransactionId::NoTransaction,
             client_request_timeout: Duration::from_secs(30),
@@ -100,6 +102,7 @@ impl SessionBuilder {
             resource_estimates: self.resource_estimates,
             properties: self.properties,
             prepared_statements: self.prepared_statements,
+            roles: self.roles,
             extra_credentials: self.extra_credentials,
             transaction_id: self.transaction_id,
             client_request_timeout: self.client_request_timeout,

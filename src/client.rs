@@ -208,7 +208,14 @@ fn add_session_header(mut builder: RequestBuilder, session: &Session) -> Request
         HEADER_RESOURCE_ESTIMATE,
         &session.resource_estimates,
     );
-    // TODO: add roles
+    builder = add_header_map(
+        builder,
+        HEADER_ROLE,
+        &session
+            .roles
+            .by_ref()
+            .map_kv(|(k, v)| (k.to_string(), v.to_string())),
+    );
     builder = add_header_map(builder, HEADER_EXTRA_CREDENTIAL, &session.extra_credentials);
     builder = add_header_map(
         builder,
@@ -220,10 +227,10 @@ fn add_session_header(mut builder: RequestBuilder, session: &Session) -> Request
     builder
 }
 
-fn add_header_map(
+fn add_header_map<'a>(
     mut builder: RequestBuilder,
     header: &str,
-    map: &HashMap<String, String>,
+    map: impl IntoIterator<Item = (&'a String, &'a String)>,
 ) -> RequestBuilder {
     for (k, v) in map {
         let kv = format!("{}={}", k, urlencoding::encode(v));
