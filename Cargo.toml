@@ -26,6 +26,7 @@ derive_more = "0.99"
 bigdecimal = "0.1"
 thiserror = "1.0"
 chrono = "0.4"
+chrono-tz = "0.5.3"
 iterable = "0.4.0"
 # network dependencies
 reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "json"]}

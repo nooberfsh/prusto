@@ -201,7 +201,10 @@ fn add_session_header(mut builder: RequestBuilder, session: &Session) -> Request
     if let Some(v) = &session.path {
         builder = builder.header(HEADER_PATH, v);
     }
-    // TODO: add timezone and locale
+    if let Some(v) = &session.timezone {
+        builder = builder.header(HEADER_TIME_ZONE, v.to_string())
+    }
+    // TODO: add locale
     builder = add_header_map(builder, HEADER_SESSION, &session.properties);
     builder = add_header_map(
         builder,

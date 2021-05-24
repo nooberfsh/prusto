@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::default::default;
 use std::time::Duration;
 
+use chrono_tz::Tz;
 use http::uri::Scheme;
 use reqwest::Url;
 
@@ -20,7 +21,9 @@ pub struct Session {
     pub catalog: Option<String>,
     pub schema: Option<String>,
     pub path: Option<String>,
-    // TODO: add timezone locale
+    // TODO: set system timezone as default value
+    pub timezone: Option<Tz>,
+    // TODO: add locale
     pub resource_estimates: HashMap<String, String>,
     pub properties: HashMap<String, String>,
     pub prepared_statements: HashMap<String, String>,
@@ -44,7 +47,8 @@ pub(crate) struct SessionBuilder {
     pub(crate) catalog: Option<String>,
     pub(crate) schema: Option<String>,
     pub(crate) path: Option<String>,
-    // TODO: add timezone locale
+    pub(crate) timezone: Option<Tz>,
+    // TODO: add locale
     pub(crate) resource_estimates: HashMap<String, String>,
     pub(crate) properties: HashMap<String, String>,
     pub(crate) prepared_statements: HashMap<String, String>,
@@ -69,6 +73,7 @@ impl SessionBuilder {
             catalog: None,
             schema: None,
             path: None,
+            timezone: None,
             resource_estimates: default(),
             properties: default(),
             prepared_statements: default(),
@@ -99,6 +104,7 @@ impl SessionBuilder {
             catalog: self.catalog,
             schema: self.schema,
             path: self.path,
+            timezone: self.timezone,
             resource_estimates: self.resource_estimates,
             properties: self.properties,
             prepared_statements: self.prepared_statements,
