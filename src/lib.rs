@@ -5,6 +5,7 @@
 #![feature(generators)]
 #![feature(default_free_fn)]
 
+pub mod auth;
 pub mod client;
 pub mod error;
 mod header;

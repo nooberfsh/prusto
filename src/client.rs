@@ -2,11 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use futures_async_stream::try_stream;
 use http::header::{ACCEPT_ENCODING, USER_AGENT};
-use iterable::*;
-use reqwest::RequestBuilder;
-use tokio::time::{sleep, Duration};
 use http::StatusCode;
+use iterable::*;
+use reqwest::{RequestBuilder, Response};
+use tokio::time::{sleep, Duration};
 
+use crate::auth::Auth;
 use crate::error::{Error, Result};
 use crate::header::*;
 use crate::session::{Session, SessionBuilder};
@@ -25,21 +26,10 @@ pub struct Client {
     max_attempt: usize,
 }
 
-#[derive(Clone, Debug)]
-pub enum Auth {
-    Basic(String, Option<String>),
-}
-
 pub struct ClientBuilder {
     session: SessionBuilder,
     auth: Option<Auth>,
     max_attempt: usize,
-}
-
-impl Auth {
-    pub fn new_basic(username: impl ToString, password: Option<impl ToString>) -> Auth {
-        Auth::Basic(username.to_string(), password.map(|p| p.to_string()))
-    }
 }
 
 impl ClientBuilder {
@@ -321,10 +311,7 @@ impl Client {
         retry!(&self, get_next, url, self.max_attempt)
     }
 
-    async fn get<T: Presto + 'static>(
-        &self,
-        sql: String,
-    ) -> Result<QueryResult<T>> {
+    async fn get<T: Presto + 'static>(&self, sql: String) -> Result<QueryResult<T>> {
         let req = self.client.post(self.session.url.clone()).body(sql);
 
         let req = add_session_header(req, &self.session);
@@ -340,10 +327,7 @@ impl Client {
         send(req).await
     }
 
-    async fn get_next<T: Presto + 'static>(
-        &self,
-        url: &str,
-    ) -> Result<QueryResult<T>> {
+    async fn get_next<T: Presto + 'static>(&self, url: &str) -> Result<QueryResult<T>> {
         let req = self.client.get(url);
         let req = add_prepare_header(req, &self.session);
 
