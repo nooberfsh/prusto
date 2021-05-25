@@ -5,6 +5,7 @@ use http::header::{ACCEPT_ENCODING, USER_AGENT};
 use iterable::*;
 use reqwest::RequestBuilder;
 use tokio::time::{sleep, Duration};
+use http::StatusCode;
 
 use crate::error::{Error, Result};
 use crate::header::*;
@@ -245,25 +246,30 @@ fn add_header_map<'a>(
 macro_rules! retry {
     ($self:expr, $f:ident, $param:expr, $max_attempt:expr) => {{
         for _ in 0..$max_attempt {
-            let res: std::result::Result<QueryResult<_>, reqwest::Error> =
-                $self.$f($param.clone()).await;
+            let res = $self.$f($param.clone()).await;
             match res {
                 Ok(d) => match d.error {
                     Some(e) => return Err(Error::QueryError(e)),
                     None => return Ok(d),
                 },
-                Err(e) => match e.status() {
-                    Some(code) if code == 503 => {
-                        sleep(Duration::from_millis(100)).await;
-                        continue;
-                    }
-                    _ => return Err(Error::HttpError(e)),
-                },
+                Err(e) if need_retry(&e) => {
+                    sleep(Duration::from_millis(100)).await;
+                    continue;
+                }
+                Err(e) => return Err(e),
             }
         }
 
         Err(Error::ReachMaxAttempt($max_attempt))
     }};
+}
+
+fn need_retry(e: &Error) -> bool {
+    match e {
+        Error::HttpError(e) => e.status() == Some(StatusCode::SERVICE_UNAVAILABLE),
+        Error::HttpNotOk(code, _) => code == &StatusCode::SERVICE_UNAVAILABLE,
+        _ => false,
+    }
 }
 
 impl Client {
@@ -318,7 +324,7 @@ impl Client {
     async fn get<T: Presto + 'static>(
         &self,
         sql: String,
-    ) -> std::result::Result<QueryResult<T>, reqwest::Error> {
+    ) -> Result<QueryResult<T>> {
         let req = self.client.post(self.session.url.clone()).body(sql);
 
         let req = add_session_header(req, &self.session);
@@ -331,18 +337,28 @@ impl Client {
             req
         };
 
-        let data = req.send().await?.json::<QueryResult<T>>().await?;
-        Ok(data)
+        send(req).await
     }
 
     async fn get_next<T: Presto + 'static>(
         &self,
         url: &str,
-    ) -> std::result::Result<QueryResult<T>, reqwest::Error> {
+    ) -> Result<QueryResult<T>> {
         let req = self.client.get(url);
         let req = add_prepare_header(req, &self.session);
 
-        let data = req.send().await?.json::<QueryResult<T>>().await?;
+        send(req).await
+    }
+}
+
+async fn send<T: Presto + 'static>(req: RequestBuilder) -> Result<QueryResult<T>> {
+    let resp = req.send().await?;
+    let status = resp.status();
+    if status != StatusCode::OK {
+        let data = resp.text().await.unwrap_or("".to_string());
+        Err(Error::HttpNotOk(status, data))
+    } else {
+        let data = resp.json::<QueryResult<T>>().await?;
         Ok(data)
     }
 }

@@ -1,4 +1,5 @@
 use reqwest::header::HeaderName;
+use reqwest::StatusCode;
 use thiserror::Error;
 
 use crate::models::QueryError;
@@ -23,6 +24,8 @@ pub enum Error {
     BasicAuthWithHttp,
     #[error("http error, reason: {0}")]
     HttpError(#[from] reqwest::Error),
+    #[error("http not ok, code: {0}, reason: {1}")]
+    HttpNotOk(StatusCode, String),
     #[error("query error, reason: {0}")]
     QueryError(#[from] QueryError),
     #[error("inconsistent data")]
