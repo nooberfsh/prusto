@@ -394,8 +394,10 @@ impl Client {
 
     async fn get<T: Presto + 'static>(&self, sql: String) -> Result<QueryResult<T>> {
         let req = self.client.post(self.url.clone()).body(sql);
-        let session = self.session.read().await;
-        let req = add_session_header(req, &session);
+        let req = {
+            let session = self.session.read().await;
+            add_session_header(req, &session)
+        };
 
         let req = if let Some(auth) = self.auth.as_ref() {
             match auth {
@@ -410,8 +412,10 @@ impl Client {
 
     async fn get_next<T: Presto + 'static>(&self, url: &str) -> Result<QueryResult<T>> {
         let req = self.client.get(url);
-        let session = self.session.read().await;
-        let req = add_prepare_header(req, &session);
+        let req = {
+            let session = self.session.read().await;
+            add_prepare_header(req, &session)
+        };
 
         self.send(req).await
     }
