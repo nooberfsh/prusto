@@ -16,4 +16,19 @@ impl TransactionId {
             Commit => "COMMIT",
         }
     }
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "NONE" => Some(Self::NoTransaction),
+            "START TRANSACTION" => Some(Self::StartTransaction),
+            "ROLLBACK" => Some(Self::RollBack),
+            "COMMIT" => Some(Self::Commit),
+            _ => None,
+        }
+    }
+}
+
+impl Default for TransactionId {
+    fn default() -> Self {
+        TransactionId::NoTransaction
+    }
 }

@@ -4,8 +4,11 @@ use futures_async_stream::try_stream;
 use http::header::{ACCEPT_ENCODING, USER_AGENT};
 use http::StatusCode;
 use iterable::*;
-use reqwest::{RequestBuilder, Response};
+use reqwest::{RequestBuilder, Response, Url};
+use reqwest::header::HeaderValue;
 use tokio::time::{sleep, Duration};
+use tokio::sync::RwLock;
+use log::*;
 
 use crate::auth::Auth;
 use crate::error::{Error, Result};
@@ -13,6 +16,7 @@ use crate::header::*;
 use crate::session::{Session, SessionBuilder};
 use crate::transaction::TransactionId;
 use crate::{DataSet, Presto, QueryResult};
+use crate::selected_role::SelectedRole;
 
 // TODO:
 // allow_redirects
@@ -21,9 +25,10 @@ use crate::{DataSet, Presto, QueryResult};
 
 pub struct Client {
     client: reqwest::Client,
-    session: Session,
+    session: RwLock<Session>,
     auth: Option<Auth>,
     max_attempt: usize,
+    url: Url,
 }
 
 pub struct ClientBuilder {
@@ -146,7 +151,8 @@ impl ClientBuilder {
         }
         let cli = Client {
             auth: self.auth,
-            session,
+            url: session.url.clone(),
+            session: RwLock::new(session),
             client,
             max_attempt,
         };
@@ -227,7 +233,7 @@ fn add_header_map<'a>(
     map: impl IntoIterator<Item = (&'a String, &'a String)>,
 ) -> RequestBuilder {
     for (k, v) in map {
-        let kv = format!("{}={}", k, urlencoding::encode(v));
+        let kv = encode_kv(k, v);
         builder = builder.header(header, kv);
     }
     builder
@@ -252,6 +258,63 @@ macro_rules! retry {
 
         Err(Error::ReachMaxAttempt($max_attempt))
     }};
+}
+
+macro_rules! set_header {
+    ($session:expr, $header:expr, $resp:expr) => {
+        set_header!($session, $header, $resp, |x: &str| Some(Some(x.to_string())));
+    };
+
+    ($session:expr, $header:expr, $resp:expr, $from_str:expr) => {
+        if let Some(v) = $resp.headers().get($header) {
+            match v.to_str() {
+                Ok(s) => {
+                    if let Some(s) = $from_str(s) {
+                        $session = s;
+                    }
+                }
+                Err(e) => warn!("parse header {} failed, reason: {}", $header, e),
+            }
+        }
+    };
+}
+
+macro_rules! clear_header {
+    ($session:expr, $header:expr, $resp:expr) => {
+        if let Some(_) = $resp.headers().get($header) {
+            $session = Default::default();
+        }
+    };
+}
+
+macro_rules! set_header_map {
+    ($session:expr, $header:expr, $resp:expr) => {
+        set_header_map!($session, $header, $resp, |x: &str| Some(x.to_string()));
+    };
+    ($session:expr, $header:expr, $resp:expr, $from_str:expr) => {
+        for v in $resp.headers().get_all($header) {
+            if let Some((k, v)) = decode_kv_from_header(v) {
+                if let Some(v) = $from_str(&v) {
+                    $session.insert(k, v);
+                }
+            } else {
+                warn!("decode '{:?}' failed", v)
+            }
+        }
+    };
+}
+
+macro_rules! clear_header_map {
+    ($session:expr, $header:expr, $resp:expr) => {
+        for v in $resp.headers().get_all($header) {
+            match v.to_str() {
+                Ok(s) => {
+                    $session.remove(s);
+                },
+                Err(e) => warn!("parse header {} failed, reason: {}", $header, e),
+            }
+        }
+    };
 }
 
 fn need_retry(e: &Error) -> bool {
@@ -312,9 +375,9 @@ impl Client {
     }
 
     async fn get<T: Presto + 'static>(&self, sql: String) -> Result<QueryResult<T>> {
-        let req = self.client.post(self.session.url.clone()).body(sql);
-
-        let req = add_session_header(req, &self.session);
+        let req = self.client.post(self.url.clone()).body(sql);
+        let session = self.session.read().await;
+        let req = add_session_header(req, &session);
 
         let req = if let Some(auth) = self.auth.as_ref() {
             match auth {
@@ -324,25 +387,64 @@ impl Client {
             req
         };
 
-        send(req).await
+        self.send(req).await
     }
 
     async fn get_next<T: Presto + 'static>(&self, url: &str) -> Result<QueryResult<T>> {
         let req = self.client.get(url);
-        let req = add_prepare_header(req, &self.session);
+        let session = self.session.read().await;
+        let req = add_prepare_header(req, &session);
 
-        send(req).await
+        self.send(req).await
+    }
+
+    async fn send<T: Presto + 'static>(&self, req: RequestBuilder) -> Result<QueryResult<T>> {
+        let resp = req.send().await?;
+        let status = resp.status();
+        if status != StatusCode::OK {
+            let data = resp.text().await.unwrap_or("".to_string());
+            Err(Error::HttpNotOk(status, data))
+        } else {
+            self.update_session(&resp).await;
+            let data = resp.json::<QueryResult<T>>().await?;
+            Ok(data)
+        }
+    }
+
+    async fn update_session(&self, resp: &Response) {
+        let mut session = self.session.write().await;
+
+        set_header!(session.catalog, HEADER_SET_CATALOG, resp);
+        set_header!(session.schema, HEADER_SET_SCHEMA, resp);
+        set_header!(session.path, HEADER_SET_PATH, resp);
+
+        set_header_map!(session.properties, HEADER_SET_SESSION, resp);
+        clear_header_map!(session.properties, HEADER_CLEAR_SESSION, resp);
+
+        set_header_map!(session.roles, HEADER_SET_ROLE, resp, SelectedRole::from_str);
+
+        set_header_map!(session.prepared_statements, HEADER_ADDED_PREPARE, resp);
+        clear_header_map!(session.prepared_statements, HEADER_DEALLOCATED_PREPARE, resp);
+
+        set_header!(session.transaction_id, HEADER_STARTED_TRANSACTION_ID, resp, TransactionId::from_str);
+        clear_header!(session.transaction_id, HEADER_CLEAR_TRANSACTION_ID, resp);
     }
 }
 
-async fn send<T: Presto + 'static>(req: RequestBuilder) -> Result<QueryResult<T>> {
-    let resp = req.send().await?;
-    let status = resp.status();
-    if status != StatusCode::OK {
-        let data = resp.text().await.unwrap_or("".to_string());
-        Err(Error::HttpNotOk(status, data))
-    } else {
-        let data = resp.json::<QueryResult<T>>().await?;
-        Ok(data)
+////////////////////////////////////////////////////////////////////////////////////////////////
+// helper functions
+
+fn encode_kv(k: &str, v: &str) -> String {
+    format!("{}={}", k, urlencoding::encode(v))
+}
+
+fn decode_kv_from_header(input: &HeaderValue) -> Option<(String, String)> {
+    let s = input.to_str().ok()?;
+    let kv = s.split("=").collect::<Vec<_>>();
+    if kv.len() != 2 {
+        return None;
     }
+    let k = kv[0].to_string();
+    let v = urlencoding::decode(kv[1]).ok()?;
+    Some((k, v))
 }

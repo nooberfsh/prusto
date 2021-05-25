@@ -28,12 +28,15 @@ thiserror = "1.0"
 chrono = "0.4"
 chrono-tz = "0.5.3"
 iterable = "0.4.0"
+log = "0.4.14"
+lazy_static = "1.4.0"
+regex = "1.5"
 # network dependencies
 reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "json"]}
 futures = "0.3"
 futures-async-stream = "0.2"
 http = "0.2"
-tokio = { version = "1.0", features = ["full"]}
+tokio = { version = "1.6", features = ["full"]}
 urlencoding = "1.3.3"
 
 [dev-dependencies]
