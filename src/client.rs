@@ -16,7 +16,7 @@ use crate::header::*;
 use crate::selected_role::SelectedRole;
 use crate::session::{Session, SessionBuilder};
 use crate::transaction::TransactionId;
-use crate::{DataSet, Presto, QueryResult};
+use crate::{DataSet, Presto, QueryResult, Row};
 
 // TODO:
 // allow_redirects
@@ -35,6 +35,11 @@ pub struct ClientBuilder {
     session: SessionBuilder,
     auth: Option<Auth>,
     max_attempt: usize,
+}
+
+#[derive(Debug)]
+pub struct ExecuteResult {
+    _m: (),
 }
 
 impl ClientBuilder {
@@ -366,6 +371,17 @@ impl Client {
         } else {
             Err(Error::EmptyData)
         }
+    }
+
+    pub async fn execute(&self, sql: String) -> Result<ExecuteResult> {
+        let res = self.get_retry::<Row>(sql).await?;
+
+        let mut next = res.next_uri;
+        while let Some(url) = &next {
+            let res = self.get_next_retry::<Row>(url).await?;
+            next = res.next_uri;
+        }
+        Ok(ExecuteResult{_m: ()})
     }
 
     async fn get_retry<T: Presto + 'static>(&self, sql: String) -> Result<QueryResult<T>> {
