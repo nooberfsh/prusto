@@ -4,19 +4,19 @@ use futures_async_stream::try_stream;
 use http::header::{ACCEPT_ENCODING, USER_AGENT};
 use http::StatusCode;
 use iterable::*;
-use reqwest::{RequestBuilder, Response, Url};
-use reqwest::header::HeaderValue;
-use tokio::time::{sleep, Duration};
-use tokio::sync::RwLock;
 use log::*;
+use reqwest::header::HeaderValue;
+use reqwest::{RequestBuilder, Response, Url};
+use tokio::sync::RwLock;
+use tokio::time::{sleep, Duration};
 
 use crate::auth::Auth;
 use crate::error::{Error, Result};
 use crate::header::*;
+use crate::selected_role::SelectedRole;
 use crate::session::{Session, SessionBuilder};
 use crate::transaction::TransactionId;
 use crate::{DataSet, Presto, QueryResult};
-use crate::selected_role::SelectedRole;
 
 // TODO:
 // allow_redirects
@@ -262,7 +262,9 @@ macro_rules! retry {
 
 macro_rules! set_header {
     ($session:expr, $header:expr, $resp:expr) => {
-        set_header!($session, $header, $resp, |x: &str| Some(Some(x.to_string())));
+        set_header!($session, $header, $resp, |x: &str| Some(Some(
+            x.to_string()
+        )));
     };
 
     ($session:expr, $header:expr, $resp:expr, $from_str:expr) => {
@@ -310,7 +312,7 @@ macro_rules! clear_header_map {
             match v.to_str() {
                 Ok(s) => {
                     $session.remove(s);
-                },
+                }
                 Err(e) => warn!("parse header {} failed, reason: {}", $header, e),
             }
         }
@@ -424,9 +426,18 @@ impl Client {
         set_header_map!(session.roles, HEADER_SET_ROLE, resp, SelectedRole::from_str);
 
         set_header_map!(session.prepared_statements, HEADER_ADDED_PREPARE, resp);
-        clear_header_map!(session.prepared_statements, HEADER_DEALLOCATED_PREPARE, resp);
+        clear_header_map!(
+            session.prepared_statements,
+            HEADER_DEALLOCATED_PREPARE,
+            resp
+        );
 
-        set_header!(session.transaction_id, HEADER_STARTED_TRANSACTION_ID, resp, TransactionId::from_str);
+        set_header!(
+            session.transaction_id,
+            HEADER_STARTED_TRANSACTION_ID,
+            resp,
+            TransactionId::from_str
+        );
         clear_header!(session.transaction_id, HEADER_CLEAR_TRANSACTION_ID, resp);
     }
 }
