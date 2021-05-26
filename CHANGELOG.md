@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://book.async.rs/overview
 
 ## [Unreleased]
 
+## [0.3.0] - 2021-05-26
+- Use `Trino` protocol
+- Add `execute` to `Client`
+- Add more session properties
+- Fix deserialization of `ClientTypeSignatureParameter`
+
 ## [0.2.0] - 2021-01-06
 - Add `len`, `as_slice` methods to `DataSet<T>`
 - Update `tokio` stack to 1.0
@@ -22,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://book.async.rs/overview
 - Initial release
 
 [Unreleased]: https://github.com/nooberfsh/prusto/compare/v0.2.0...HEAD
+[0.3.0]: https://github.com/nooberfsh/prusto/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/nooberfsh/prusto/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/nooberfsh/prusto/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/nooberfsh/prusto/compare/v0.1.0...v0.1.1
