@@ -77,6 +77,11 @@ impl ClientBuilder {
         self
     }
 
+    pub fn client_tag(mut self, s: impl ToString) -> Self {
+        self.session.client_tags.insert(s.to_string());
+        self
+    }
+
     pub fn client_info(mut self, s: impl ToString) -> Self {
         self.session.client_info = Some(s.to_string());
         self
@@ -102,8 +107,18 @@ impl ClientBuilder {
         self
     }
 
+    pub fn resource_estimate(mut self, k: impl ToString, v: impl ToString)-> Self {
+        self.session.resource_estimates.insert(k.to_string(), v.to_string());
+        self
+    }
+
     pub fn properties(mut self, s: HashMap<String, String>) -> Self {
         self.session.properties = s;
+        self
+    }
+
+    pub fn property(mut self, k: impl ToString, v: impl ToString) -> Self {
+        self.session.properties.insert(k.to_string(), v.to_string());
         self
     }
 
@@ -112,8 +127,18 @@ impl ClientBuilder {
         self
     }
 
+    pub fn prepared_statement(mut self, k: impl ToString, v: impl ToString) -> Self {
+        self.session.prepared_statements.insert(k.to_string(), v.to_string());
+        self
+    }
+
     pub fn extra_credentials(mut self, s: HashMap<String, String>) -> Self {
         self.session.extra_credentials = s;
+        self
+    }
+
+    pub fn extra_credential(mut self, k: impl ToString, v: impl ToString) -> Self {
+        self.session.extra_credentials.insert(k.to_string(), v.to_string());
         self
     }
 
