@@ -1,6 +1,6 @@
 # Prusto
 
-A [presto](https://prestosql.io/) client library written in rust.
+A [presto/trino](https://trino.io/) client library written in rust.
 
 
 ## Prerequisites
@@ -12,7 +12,7 @@ A [presto](https://prestosql.io/) client library written in rust.
 ```toml
 # Cargo.toml
 [dependencies]
-prusto = "0.2"
+prusto = "0.3"
 ```
 
 ## Example
