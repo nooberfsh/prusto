@@ -3,7 +3,6 @@
 #![feature(type_alias_impl_trait)]
 #![feature(generic_associated_types)]
 #![feature(generators)]
-#![feature(default_free_fn)]
 
 pub mod auth;
 pub mod client;

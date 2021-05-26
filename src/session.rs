@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::default::default;
 use std::time::Duration;
 
 use chrono_tz::Tz;
@@ -9,6 +8,11 @@ use reqwest::Url;
 use crate::error::*;
 use crate::selected_role::SelectedRole;
 use crate::transaction::TransactionId;
+
+// TODO remove this when `std::default::default` is stabilized
+fn default<T: Default>() -> T {
+    Default::default()
+}
 
 #[derive(Debug)]
 pub struct Session {
