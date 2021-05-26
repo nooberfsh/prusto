@@ -1,4 +1,8 @@
-use serde::{Deserialize, Serialize};
+use std::fmt;
+
+use serde::{Deserialize, Serialize, Serializer, Deserializer};
+use serde::ser::SerializeStruct;
+use serde::de::{self, Visitor, MapAccess};
 
 use super::RawPrestoTy;
 
@@ -37,15 +41,89 @@ pub struct RowFieldName {
     delimited: (), // deprecated
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-#[serde(tag = "kind", content = "value")]
+#[derive(Debug, Eq, PartialEq)]
 pub enum ClientTypeSignatureParameter {
-    #[serde(rename = "TYPE_SIGNATURE")]
     TypeSignature(TypeSignature),
-    #[serde(rename = "NAMED_TYPE_SIGNATURE")]
     NamedTypeSignature(NamedTypeSignature),
-    #[serde(rename = "LONG")]
     LongLiteral(u64),
+}
+
+impl Serialize for ClientTypeSignatureParameter {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use ClientTypeSignatureParameter::*;
+        let mut state = serializer.serialize_struct("ClientTypeSignatureParameter", 2)?;
+        match self {
+            TypeSignature(s) =>  {
+                state.serialize_field("kind", "TYPE")?;
+                state.serialize_field("value", s)?;
+            },
+            NamedTypeSignature(s) =>  {
+                state.serialize_field("kind", "NAMED_TYPE")?;
+                state.serialize_field("value", s)?;
+            },
+            LongLiteral(s) =>  {
+                state.serialize_field("kind", "LONG")?;
+                state.serialize_field("value", s)?;
+            },
+        };
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for ClientTypeSignatureParameter {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field {Kind, Value}
+
+        struct ParamVisitor;
+
+        impl<'de> Visitor<'de> for ParamVisitor {
+            type Value = ClientTypeSignatureParameter;
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct ClientTypeSignatureParameter")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<ClientTypeSignatureParameter, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let kind = if let Some(Field::Kind) = map.next_key()? {
+                    map.next_value()?
+                } else {
+                    return Err(de::Error::missing_field("kind"));
+                };
+                if let Some(Field::Value) = map.next_key()?{
+                  match kind  {
+                      "TYPE" | "TYPE_SIGNATURE" => {
+                          let v = map.next_value()?;
+                          Ok(ClientTypeSignatureParameter::TypeSignature(v))
+                      }
+                      "NAMED_TYPE" | "NAMED_TYPE_SIGNATURE" => {
+                          let v = map.next_value()?;
+                          Ok(ClientTypeSignatureParameter::NamedTypeSignature(v))
+                      }
+                      "LONG" | "LONG_LITERAL" => {
+                          let v = map.next_value()?;
+                          Ok(ClientTypeSignatureParameter::LongLiteral(v))
+                      }
+                      k => Err(de::Error::custom(format!("unknown kind: {}", k)))
+                  }
+                } else {
+                    Err(de::Error::missing_field("value"))
+                }
+            }
+        }
+
+        const FIELDS: &'static [&'static str] = &["kind", "value"];
+        deserializer.deserialize_struct("ClientTypeSignatureParameter", FIELDS, ParamVisitor)
+    }
 }
 
 impl TypeSignature {
