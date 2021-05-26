@@ -1,4 +1,5 @@
 use std::fmt;
+use std::borrow::Cow;
 
 use serde::{Deserialize, Serialize, Serializer, Deserializer};
 use serde::ser::SerializeStruct;
@@ -6,7 +7,7 @@ use serde::de::{self, Visitor, MapAccess};
 
 use super::RawPrestoTy;
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Column {
     pub name: String,
@@ -15,7 +16,7 @@ pub struct Column {
     pub type_signature: Option<TypeSignature>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TypeSignature {
     pub raw_type: RawPrestoTy,
@@ -26,14 +27,14 @@ pub struct TypeSignature {
     literal_arguments: (), //deprecated
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct NamedTypeSignature {
     pub field_name: Option<RowFieldName>,
     pub type_signature: TypeSignature,
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct RowFieldName {
     pub name: String,
@@ -41,7 +42,7 @@ pub struct RowFieldName {
     delimited: (), // deprecated
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ClientTypeSignatureParameter {
     TypeSignature(TypeSignature),
     NamedTypeSignature(NamedTypeSignature),
@@ -95,12 +96,15 @@ impl<'de> Deserialize<'de> for ClientTypeSignatureParameter {
                 V: MapAccess<'de>,
             {
                 let kind = if let Some(Field::Kind) = map.next_key()? {
-                    map.next_value()?
+                    // this is can't be `&str`
+                    // https://github.com/serde-rs/serde/issues/1009
+                    // https://github.com/serde-rs/serde/issues/1413#issuecomment-494892266
+                    map.next_value::<Cow<'_, str>>()?
                 } else {
                     return Err(de::Error::missing_field("kind"));
                 };
                 if let Some(Field::Value) = map.next_key()?{
-                  match kind  {
+                  match kind.as_ref()  {
                       "TYPE" | "TYPE_SIGNATURE" => {
                           let v = map.next_value()?;
                           Ok(ClientTypeSignatureParameter::TypeSignature(v))
@@ -271,5 +275,16 @@ mod tests {
                 literal_arguments: (),
             }
         );
+    }
+
+    #[test]
+    fn test_sig_param() {
+        let s = r#"{"kind":"LONG","value":10}"#;
+        let res = serde_json::from_str::<ClientTypeSignatureParameter>(s).unwrap();
+        assert_eq!(res, ClientTypeSignatureParameter::LongLiteral(10));
+
+        let json = serde_json::to_value(res.clone()).unwrap();
+        let res2: ClientTypeSignatureParameter  = serde_json::from_value(json).unwrap();
+        assert_eq!(res, res2)
     }
 }
