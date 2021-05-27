@@ -18,7 +18,7 @@ members = [".", "prusto-macros"]
 
 [dependencies]
 # self dependencies
-macros = { version = "0.1", path = "prusto-macros", package = "prusto-macros"}
+prusto-macros = { version = "0.1", path = "prusto-macros"}
 # third party dependencies
 serde = { version = "1.0", features = ["derive"]}
 serde_json = "1.0"
