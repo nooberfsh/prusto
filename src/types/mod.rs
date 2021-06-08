@@ -10,6 +10,7 @@ mod row;
 mod seq;
 mod string;
 pub(self) mod util;
+mod fixed_char;
 
 pub use boolean::*;
 pub use data_set::*;
@@ -23,6 +24,7 @@ pub use option::*;
 pub use row::*;
 pub use seq::*;
 pub use string::*;
+pub use fixed_char::*;
 
 //mod str;
 //pub use self::str::*;
@@ -117,6 +119,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
         (PrestoInt(_), PrestoInt(_)) => Ok(vec![]),
         (PrestoFloat(_), PrestoFloat(_)) => Ok(vec![]),
         (Varchar, Varchar) => Ok(vec![]),
+        (Char(a), Char(b)) if a == b => Ok(vec![]),
         (Tuple(t1), Tuple(t2)) => {
             if t1.len() != t2.len() {
                 Err(Error::InvalidPrestoType)
@@ -161,6 +164,7 @@ pub enum PrestoTy {
     PrestoInt(PrestoInt),
     PrestoFloat(PrestoFloat),
     Varchar,
+    Char(usize),
     Tuple(Vec<PrestoTy>),
     Row(Vec<(String, PrestoTy)>),
     Array(Box<PrestoTy>),
@@ -214,6 +218,12 @@ impl PrestoTy {
             RawPrestoTy::Real => PrestoTy::PrestoFloat(F32),
             RawPrestoTy::Double => PrestoTy::PrestoFloat(F64),
             RawPrestoTy::VarChar => PrestoTy::Varchar,
+            RawPrestoTy::Char if sig.arguments.len() == 1 =>
+                if let ClientTypeSignatureParameter::LongLiteral(p) = sig.arguments.pop().unwrap() {
+                    PrestoTy::Char(p as usize)
+                } else {
+                    return Err(Error::InvalidTypeSignature);
+                }
             RawPrestoTy::Array if sig.arguments.len() == 1 => {
                 let sig = sig.arguments.pop().unwrap();
                 if let ClientTypeSignatureParameter::TypeSignature(sig) = sig {
@@ -304,6 +314,7 @@ impl PrestoTy {
             PrestoInt(_) => vec![],
             PrestoFloat(_) => vec![],
             Varchar => vec![ClientTypeSignatureParameter::LongLiteral(2147483647)],
+            Char(a) => vec![ClientTypeSignatureParameter::LongLiteral(a as u64)],
             Tuple(ts) => ts.map(|ty| {
                 ClientTypeSignatureParameter::NamedTypeSignature(NamedTypeSignature {
                     field_name: None,
@@ -342,6 +353,7 @@ impl PrestoTy {
             PrestoInt(ty) => ty.raw_type().to_str().into(),
             PrestoFloat(ty) => ty.raw_type().to_str().into(),
             Varchar => RawPrestoTy::VarChar.to_str().into(),
+            Char(a) => format!("{}({})", RawPrestoTy::Char.to_str(), a).into(),
             Tuple(ts) => format!(
                 "{}({})",
                 RawPrestoTy::Row.to_str(),
@@ -380,6 +392,7 @@ impl PrestoTy {
             PrestoInt(ty) => ty.raw_type(),
             PrestoFloat(ty) => ty.raw_type(),
             Varchar => RawPrestoTy::VarChar,
+            Char(_) => RawPrestoTy::Char,
             Tuple(_) => RawPrestoTy::Row,
             Row(_) => RawPrestoTy::Row,
             Array(_) => RawPrestoTy::Array,

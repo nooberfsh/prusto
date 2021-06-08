@@ -1,0 +1,22 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "char(3)",
+            "typeSignature": {
+                "rawType": "char",
+                "arguments": [
+                    {
+                        "kind": "LONG",
+                        "value": 3
+                    }
+                ]
+            }
+        }
+    ],
+    "data": [
+        [
+            "abc"
+        ]
+    ]
+}

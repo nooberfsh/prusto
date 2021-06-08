@@ -12,7 +12,7 @@ use maplit::{btreemap, hashmap};
 use serde_json::value::Value;
 
 use prusto::types::{DataSet, Decimal};
-use prusto::{Column, Row};
+use prusto::{Column, Row, FixedChar};
 use prusto::{Presto, PrestoFloat, PrestoInt, PrestoTy};
 
 fn read(name: &str) -> (String, Value) {
@@ -48,6 +48,25 @@ fn split(v: Value) -> Option<(Vec<Column>, Value)> {
     } else {
         None
     }
+}
+
+#[test]
+fn test_char() {
+    #[derive(Presto, Eq, PartialEq, Debug, Clone)]
+    struct A {
+        a: FixedChar<3>,
+    }
+
+    let (s, v) = read("char");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+    assert_eq!(
+        d[0].a.clone().into_string(),
+        "abc"
+    );
 }
 
 #[test]
