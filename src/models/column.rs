@@ -1,9 +1,9 @@
-use std::fmt;
 use std::borrow::Cow;
+use std::fmt;
 
-use serde::{Deserialize, Serialize, Serializer, Deserializer};
+use serde::de::{self, MapAccess, Visitor};
 use serde::ser::SerializeStruct;
-use serde::de::{self, Visitor, MapAccess};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use super::RawPrestoTy;
 
@@ -57,18 +57,18 @@ impl Serialize for ClientTypeSignatureParameter {
         use ClientTypeSignatureParameter::*;
         let mut state = serializer.serialize_struct("ClientTypeSignatureParameter", 2)?;
         match self {
-            TypeSignature(s) =>  {
+            TypeSignature(s) => {
                 state.serialize_field("kind", "TYPE")?;
                 state.serialize_field("value", s)?;
-            },
-            NamedTypeSignature(s) =>  {
+            }
+            NamedTypeSignature(s) => {
                 state.serialize_field("kind", "NAMED_TYPE")?;
                 state.serialize_field("value", s)?;
-            },
-            LongLiteral(s) =>  {
+            }
+            LongLiteral(s) => {
                 state.serialize_field("kind", "LONG")?;
                 state.serialize_field("value", s)?;
-            },
+            }
         };
         state.end()
     }
@@ -76,12 +76,15 @@ impl Serialize for ClientTypeSignatureParameter {
 
 impl<'de> Deserialize<'de> for ClientTypeSignatureParameter {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         #[derive(Deserialize)]
         #[serde(field_identifier, rename_all = "lowercase")]
-        enum Field {Kind, Value}
+        enum Field {
+            Kind,
+            Value,
+        }
 
         struct ParamVisitor;
 
@@ -103,22 +106,22 @@ impl<'de> Deserialize<'de> for ClientTypeSignatureParameter {
                 } else {
                     return Err(de::Error::missing_field("kind"));
                 };
-                if let Some(Field::Value) = map.next_key()?{
-                  match kind.as_ref()  {
-                      "TYPE" | "TYPE_SIGNATURE" => {
-                          let v = map.next_value()?;
-                          Ok(ClientTypeSignatureParameter::TypeSignature(v))
-                      }
-                      "NAMED_TYPE" | "NAMED_TYPE_SIGNATURE" => {
-                          let v = map.next_value()?;
-                          Ok(ClientTypeSignatureParameter::NamedTypeSignature(v))
-                      }
-                      "LONG" | "LONG_LITERAL" => {
-                          let v = map.next_value()?;
-                          Ok(ClientTypeSignatureParameter::LongLiteral(v))
-                      }
-                      k => Err(de::Error::custom(format!("unknown kind: {}", k)))
-                  }
+                if let Some(Field::Value) = map.next_key()? {
+                    match kind.as_ref() {
+                        "TYPE" | "TYPE_SIGNATURE" => {
+                            let v = map.next_value()?;
+                            Ok(ClientTypeSignatureParameter::TypeSignature(v))
+                        }
+                        "NAMED_TYPE" | "NAMED_TYPE_SIGNATURE" => {
+                            let v = map.next_value()?;
+                            Ok(ClientTypeSignatureParameter::NamedTypeSignature(v))
+                        }
+                        "LONG" | "LONG_LITERAL" => {
+                            let v = map.next_value()?;
+                            Ok(ClientTypeSignatureParameter::LongLiteral(v))
+                        }
+                        k => Err(de::Error::custom(format!("unknown kind: {}", k))),
+                    }
                 } else {
                     Err(de::Error::missing_field("value"))
                 }
@@ -284,7 +287,7 @@ mod tests {
         assert_eq!(res, ClientTypeSignatureParameter::LongLiteral(10));
 
         let json = serde_json::to_value(res.clone()).unwrap();
-        let res2: ClientTypeSignatureParameter  = serde_json::from_value(json).unwrap();
+        let res2: ClientTypeSignatureParameter = serde_json::from_value(json).unwrap();
         assert_eq!(res, res2)
     }
 }

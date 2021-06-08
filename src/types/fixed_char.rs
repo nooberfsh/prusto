@@ -37,12 +37,10 @@ pub struct FixedCharSeed<const P: usize>;
 impl<'de, const P: usize> DeserializeSeed<'de> for FixedCharSeed<P> {
     type Value = FixedChar<P>;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        Ok(FixedChar {
-            inner: s
-        })
+        Ok(FixedChar { inner: s })
     }
 }

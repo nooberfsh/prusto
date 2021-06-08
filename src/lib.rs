@@ -15,6 +15,6 @@ pub mod transaction;
 pub mod types;
 
 pub use client::*;
-pub use prusto_macros::*;
 pub use models::*;
+pub use prusto_macros::*;
 pub use types::*;

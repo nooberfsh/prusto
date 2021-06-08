@@ -107,8 +107,10 @@ impl ClientBuilder {
         self
     }
 
-    pub fn resource_estimate(mut self, k: impl ToString, v: impl ToString)-> Self {
-        self.session.resource_estimates.insert(k.to_string(), v.to_string());
+    pub fn resource_estimate(mut self, k: impl ToString, v: impl ToString) -> Self {
+        self.session
+            .resource_estimates
+            .insert(k.to_string(), v.to_string());
         self
     }
 
@@ -128,7 +130,9 @@ impl ClientBuilder {
     }
 
     pub fn prepared_statement(mut self, k: impl ToString, v: impl ToString) -> Self {
-        self.session.prepared_statements.insert(k.to_string(), v.to_string());
+        self.session
+            .prepared_statements
+            .insert(k.to_string(), v.to_string());
         self
     }
 
@@ -138,7 +142,9 @@ impl ClientBuilder {
     }
 
     pub fn extra_credential(mut self, k: impl ToString, v: impl ToString) -> Self {
-        self.session.extra_credentials.insert(k.to_string(), v.to_string());
+        self.session
+            .extra_credentials
+            .insert(k.to_string(), v.to_string());
         self
     }
 
@@ -406,7 +412,7 @@ impl Client {
             let res = self.get_next_retry::<Row>(url).await?;
             next = res.next_uri;
         }
-        Ok(ExecuteResult{_m: ()})
+        Ok(ExecuteResult { _m: () })
     }
 
     async fn get_retry<T: Presto + 'static>(&self, sql: String) -> Result<QueryResult<T>> {

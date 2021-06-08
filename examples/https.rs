@@ -4,8 +4,8 @@
 use std::env::var;
 
 use dotenv::dotenv;
-use prusto::{ClientBuilder, Row};
 use prusto::auth::Auth;
+use prusto::{ClientBuilder, Row};
 
 #[tokio::main]
 async fn main() {

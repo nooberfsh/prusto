@@ -2,6 +2,7 @@ mod boolean;
 mod data_set;
 mod date_time;
 mod decimal;
+mod fixed_char;
 mod float;
 mod integer;
 mod map;
@@ -10,12 +11,12 @@ mod row;
 mod seq;
 mod string;
 pub(self) mod util;
-mod fixed_char;
 
 pub use boolean::*;
 pub use data_set::*;
 pub use date_time::*;
 pub use decimal::*;
+pub use fixed_char::*;
 pub use float::*;
 pub use integer::*;
 pub use integer::*;
@@ -24,7 +25,6 @@ pub use option::*;
 pub use row::*;
 pub use seq::*;
 pub use string::*;
-pub use fixed_char::*;
 
 //mod str;
 //pub use self::str::*;
@@ -218,12 +218,13 @@ impl PrestoTy {
             RawPrestoTy::Real => PrestoTy::PrestoFloat(F32),
             RawPrestoTy::Double => PrestoTy::PrestoFloat(F64),
             RawPrestoTy::VarChar => PrestoTy::Varchar,
-            RawPrestoTy::Char if sig.arguments.len() == 1 =>
+            RawPrestoTy::Char if sig.arguments.len() == 1 => {
                 if let ClientTypeSignatureParameter::LongLiteral(p) = sig.arguments.pop().unwrap() {
                     PrestoTy::Char(p as usize)
                 } else {
                     return Err(Error::InvalidTypeSignature);
                 }
+            }
             RawPrestoTy::Array if sig.arguments.len() == 1 => {
                 let sig = sig.arguments.pop().unwrap();
                 if let ClientTypeSignatureParameter::TypeSignature(sig) = sig {
