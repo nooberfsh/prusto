@@ -5,6 +5,7 @@ mod decimal;
 mod fixed_char;
 mod float;
 mod integer;
+mod interval_month;
 mod map;
 mod option;
 mod row;
@@ -20,6 +21,7 @@ pub use fixed_char::*;
 pub use float::*;
 pub use integer::*;
 pub use integer::*;
+pub use interval_month::*;
 pub use map::*;
 pub use option::*;
 pub use row::*;
@@ -51,6 +53,7 @@ pub enum Error {
     InvalidColumn,
     InvalidTypeSignature,
     ParseDecimalFailed(String),
+    ParseIntervalMonthFailed,
     EmptyInPrestoRow,
     NonePrestoRow,
 }
@@ -116,6 +119,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
         (Date, Date) => Ok(vec![]),
         (Time, Time) => Ok(vec![]),
         (Timestamp, Timestamp) => Ok(vec![]),
+        (IntervalMonth, IntervalMonth) => Ok(vec![]),
         (PrestoInt(_), PrestoInt(_)) => Ok(vec![]),
         (PrestoFloat(_), PrestoFloat(_)) => Ok(vec![]),
         (Varchar, Varchar) => Ok(vec![]),
@@ -159,6 +163,7 @@ pub enum PrestoTy {
     Date,
     Time,
     Timestamp,
+    IntervalMonth,
     Option(Box<PrestoTy>),
     Boolean,
     PrestoInt(PrestoInt),
@@ -196,6 +201,7 @@ impl PrestoTy {
             RawPrestoTy::Date => PrestoTy::Date,
             RawPrestoTy::Time => PrestoTy::Time,
             RawPrestoTy::Timestamp => PrestoTy::Timestamp,
+            RawPrestoTy::IntervalYearToMonth => PrestoTy::IntervalMonth,
             RawPrestoTy::Unknown => PrestoTy::Unknown,
             RawPrestoTy::Decimal if sig.arguments.len() == 2 => {
                 let s_sig = sig.arguments.pop().unwrap();
@@ -310,6 +316,7 @@ impl PrestoTy {
             Date => vec![],
             Time => vec![],
             Timestamp => vec![],
+            IntervalMonth => vec![],
             Option(t) => return t.into_type_signature(),
             Boolean => vec![],
             PrestoInt(_) => vec![],
@@ -350,6 +357,7 @@ impl PrestoTy {
             Date => RawPrestoTy::Date.to_str().into(),
             Time => RawPrestoTy::Time.to_str().into(),
             Timestamp => RawPrestoTy::Timestamp.to_str().into(),
+            IntervalMonth => RawPrestoTy::IntervalYearToMonth.to_str().into(),
             Boolean => RawPrestoTy::Boolean.to_str().into(),
             PrestoInt(ty) => ty.raw_type().to_str().into(),
             PrestoFloat(ty) => ty.raw_type().to_str().into(),
@@ -387,6 +395,7 @@ impl PrestoTy {
             Date => RawPrestoTy::Date,
             Time => RawPrestoTy::Time,
             Timestamp => RawPrestoTy::Timestamp,
+            IntervalMonth => RawPrestoTy::IntervalYearToMonth,
             Decimal(_, _) => RawPrestoTy::Decimal,
             Option(ty) => ty.raw_type(),
             Boolean => RawPrestoTy::Boolean,
