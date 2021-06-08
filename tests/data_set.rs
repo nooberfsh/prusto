@@ -12,7 +12,7 @@ use maplit::{btreemap, hashmap};
 use serde_json::value::Value;
 
 use prusto::types::{DataSet, Decimal};
-use prusto::{Column, FixedChar, IntervalMonth, Row};
+use prusto::{Column, FixedChar, IntervalMonth, Row, IntervalDay};
 use prusto::{Presto, PrestoFloat, PrestoInt, PrestoTy};
 
 fn read(name: &str) -> (String, Value) {
@@ -82,6 +82,24 @@ fn test_interval_month() {
     assert_eq!(d.len(), 1);
     assert_eq!(d[0].a.interval(), -112);
     assert_eq!(d[0].b.interval(), 6);
+}
+
+#[test]
+fn test_interval_day() {
+    #[derive(Presto, Eq, PartialEq, Debug, Clone)]
+    struct A {
+        a: IntervalDay,
+        b: IntervalDay,
+    }
+
+    let (s, v) = read("interval_day");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+    assert_eq!(d[0].a.interval(), -2);
+    assert_eq!(d[0].b.interval(), 2);
 }
 
 #[test]
