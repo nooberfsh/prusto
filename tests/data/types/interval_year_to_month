@@ -15,12 +15,21 @@
                 "rawType": "interval year to month",
                 "arguments": []
             }
+        },
+        {
+            "name": "c",
+            "type": "interval year to month",
+            "typeSignature": {
+                "rawType": "interval year to month",
+                "arguments": []
+            }
         }
     ],
     "data": [
         [
             "-9-4",
-            "0-6"
+            "0-6",
+            "6-0"
         ]
     ]
 }

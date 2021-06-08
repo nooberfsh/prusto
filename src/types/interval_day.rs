@@ -26,9 +26,7 @@ impl FromStr for IntervalDay {
         let day = parts[0]
             .parse()
             .map_err(|_| Error::ParseIntervalDayFailed)?;
-        Ok(IntervalDay{
-            day
-        })
+        Ok(IntervalDay { day })
     }
 }
 
@@ -56,8 +54,8 @@ pub struct IntervalDaySeed;
 impl<'de> DeserializeSeed<'de> for IntervalDaySeed {
     type Value = IntervalDay;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let s = <&'de str as Deserialize<'de>>::deserialize(deserializer)?;
         let d = IntervalDay::from_str(s).map_err(de::Error::custom)?;

@@ -5,14 +5,14 @@ mod decimal;
 mod fixed_char;
 mod float;
 mod integer;
-mod interval_month;
+mod interval_day;
+mod interval_year_to_month;
 mod map;
 mod option;
 mod row;
 mod seq;
 mod string;
 pub(self) mod util;
-mod interval_day;
 
 pub use boolean::*;
 pub use data_set::*;
@@ -22,8 +22,8 @@ pub use fixed_char::*;
 pub use float::*;
 pub use integer::*;
 pub use integer::*;
-pub use interval_month::*;
 pub use interval_day::*;
+pub use interval_year_to_month::*;
 pub use map::*;
 pub use option::*;
 pub use row::*;
@@ -122,7 +122,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
         (Date, Date) => Ok(vec![]),
         (Time, Time) => Ok(vec![]),
         (Timestamp, Timestamp) => Ok(vec![]),
-        (IntervalMonth, IntervalMonth) => Ok(vec![]),
+        (IntervalYearToMonth, IntervalYearToMonth) => Ok(vec![]),
         (IntervalDay, IntervalDay) => Ok(vec![]),
         (PrestoInt(_), PrestoInt(_)) => Ok(vec![]),
         (PrestoFloat(_), PrestoFloat(_)) => Ok(vec![]),
@@ -175,7 +175,7 @@ pub enum PrestoTy {
     Date,
     Time,
     Timestamp,
-    IntervalMonth,
+    IntervalYearToMonth,
     IntervalDay,
     Option(Box<PrestoTy>),
     Boolean,
@@ -214,7 +214,7 @@ impl PrestoTy {
             RawPrestoTy::Date => PrestoTy::Date,
             RawPrestoTy::Time => PrestoTy::Time,
             RawPrestoTy::Timestamp => PrestoTy::Timestamp,
-            RawPrestoTy::IntervalYearToMonth => PrestoTy::IntervalMonth,
+            RawPrestoTy::IntervalYearToMonth => PrestoTy::IntervalYearToMonth,
             RawPrestoTy::IntervalDayToSecond => PrestoTy::IntervalDay,
             RawPrestoTy::Unknown => PrestoTy::Unknown,
             RawPrestoTy::Decimal if sig.arguments.len() == 2 => {
@@ -330,7 +330,7 @@ impl PrestoTy {
             Date => vec![],
             Time => vec![],
             Timestamp => vec![],
-            IntervalMonth => vec![],
+            IntervalYearToMonth => vec![],
             IntervalDay => vec![],
             Option(t) => return t.into_type_signature(),
             Boolean => vec![],
@@ -372,7 +372,7 @@ impl PrestoTy {
             Date => RawPrestoTy::Date.to_str().into(),
             Time => RawPrestoTy::Time.to_str().into(),
             Timestamp => RawPrestoTy::Timestamp.to_str().into(),
-            IntervalMonth => RawPrestoTy::IntervalYearToMonth.to_str().into(),
+            IntervalYearToMonth => RawPrestoTy::IntervalYearToMonth.to_str().into(),
             IntervalDay => RawPrestoTy::IntervalDayToSecond.to_str().into(),
             Boolean => RawPrestoTy::Boolean.to_str().into(),
             PrestoInt(ty) => ty.raw_type().to_str().into(),
@@ -411,7 +411,7 @@ impl PrestoTy {
             Date => RawPrestoTy::Date,
             Time => RawPrestoTy::Time,
             Timestamp => RawPrestoTy::Timestamp,
-            IntervalMonth => RawPrestoTy::IntervalYearToMonth,
+            IntervalYearToMonth => RawPrestoTy::IntervalYearToMonth,
             IntervalDay => RawPrestoTy::IntervalDayToSecond,
             Decimal(_, _) => RawPrestoTy::Decimal,
             Option(ty) => ty.raw_type(),

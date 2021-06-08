@@ -5,21 +5,21 @@ use serde::de::{self, Deserialize, DeserializeSeed, Deserializer};
 use super::{Context, Error, Presto, PrestoTy};
 
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
-pub struct IntervalMonth {
+pub struct IntervalYearToMonth {
     positive: bool,
     year: u32,
     month: u32,
 }
 
-impl IntervalMonth {
-    pub fn interval(&self) -> i64 {
+impl IntervalYearToMonth {
+    pub fn total_month(&self) -> i64 {
         let total = self.year * 12 + self.month;
         let sign = if self.positive { 1 } else { -1 };
         total as i64 * sign
     }
 }
 
-impl FromStr for IntervalMonth {
+impl FromStr for IntervalYearToMonth {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -38,7 +38,7 @@ impl FromStr for IntervalMonth {
         let month = parts[1]
             .parse()
             .map_err(|_| Error::ParseIntervalMonthFailed)?;
-        Ok(IntervalMonth {
+        Ok(IntervalYearToMonth {
             positive,
             year,
             month,
@@ -46,19 +46,19 @@ impl FromStr for IntervalMonth {
     }
 }
 
-impl Presto for IntervalMonth {
+impl Presto for IntervalYearToMonth {
     type ValueType<'a> = String;
-    type Seed<'a, 'de> = IntervalMonthSeed;
+    type Seed<'a, 'de> = IntervalYearToMonthSeed;
 
     fn value(&self) -> Self::ValueType<'_> {
         let prefix = if self.positive { "" } else { "-" };
         format!("{}{}-{}", prefix, self.year, self.month)
     }
     fn ty() -> PrestoTy {
-        PrestoTy::IntervalMonth
+        PrestoTy::IntervalYearToMonth
     }
     fn seed<'a, 'de>(_ctx: &'a Context) -> Self::Seed<'a, 'de> {
-        IntervalMonthSeed
+        IntervalYearToMonthSeed
     }
 
     fn empty() -> Self {
@@ -66,16 +66,16 @@ impl Presto for IntervalMonth {
     }
 }
 
-pub struct IntervalMonthSeed;
+pub struct IntervalYearToMonthSeed;
 
-impl<'de> DeserializeSeed<'de> for IntervalMonthSeed {
-    type Value = IntervalMonth;
+impl<'de> DeserializeSeed<'de> for IntervalYearToMonthSeed {
+    type Value = IntervalYearToMonth;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'de>,
     {
         let s = <&'de str as Deserialize<'de>>::deserialize(deserializer)?;
-        let d = IntervalMonth::from_str(s).map_err(de::Error::custom)?;
+        let d = IntervalYearToMonth::from_str(s).map_err(de::Error::custom)?;
 
         Ok(d)
     }
