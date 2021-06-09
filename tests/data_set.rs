@@ -14,6 +14,7 @@ use serde_json::value::Value;
 use prusto::types::{DataSet, Decimal};
 use prusto::{Column, FixedChar, IntervalDayToSecond, IntervalYearToMonth, Row};
 use prusto::{Presto, PrestoFloat, PrestoInt, PrestoTy};
+use std::net::IpAddr;
 
 fn read(name: &str) -> (String, Value) {
     let p = "tests/data/types/".to_string() + name;
@@ -84,6 +85,23 @@ fn test_interval_year_to_month() {
     assert_eq!(d[0].a.total_months(), -112);
     assert_eq!(d[0].b.total_months(), 6);
     assert_eq!(d[0].c.total_months(), 72);
+}
+
+#[test]
+fn test_ip_address() {
+    #[derive(Presto, Eq, PartialEq, Debug, Clone)]
+    struct A {
+        a: IpAddr,
+        b: IpAddr,
+    }
+
+    let (s, v) = read("ip_address");
+    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+    assert_eq!(d[0].a, IpAddr::from_str("10.0.0.1").unwrap());
 }
 
 #[test]

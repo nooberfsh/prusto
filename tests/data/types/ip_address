@@ -1,0 +1,26 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "ipaddress",
+            "typeSignature": {
+                "rawType": "ipaddress",
+                "arguments": []
+            }
+        },
+        {
+            "name": "b",
+            "type": "ipaddress",
+            "typeSignature": {
+                "rawType": "ipaddress",
+                "arguments": []
+            }
+        }
+    ],
+    "data": [
+        [
+            "10.0.0.1",
+            "2001:db8::1"
+        ]
+    ]
+}

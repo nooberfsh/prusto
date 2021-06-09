@@ -13,6 +13,7 @@ mod row;
 mod seq;
 mod string;
 pub(self) mod util;
+mod ip_address;
 
 pub use boolean::*;
 pub use data_set::*;
@@ -29,6 +30,7 @@ pub use option::*;
 pub use row::*;
 pub use seq::*;
 pub use string::*;
+pub use ip_address::*;
 
 //mod str;
 //pub use self::str::*;
@@ -158,6 +160,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
         }
         (Array(t1), Array(t2)) => extract(t1, t2),
         (Map(t1k, t1v), Map(t2k, t2v)) => Ok(extract(t1k, t2k)?.chain(extract(t1v, t2v)?)),
+        (IpAddress, IpAddress) => Ok(vec![]),
         _ => Err(Error::InvalidPrestoType),
     }
 }
@@ -186,6 +189,7 @@ pub enum PrestoTy {
     Array(Box<PrestoTy>),
     Map(Box<PrestoTy>, Box<PrestoTy>),
     Decimal(usize, usize),
+    IpAddress,
     Unknown,
 }
 
@@ -293,6 +297,7 @@ impl PrestoTy {
                     PrestoTy::Tuple(tuple)
                 }
             }
+            RawPrestoTy::IpAddress => PrestoTy::IpAddress,
             _ => return Err(Error::InvalidTypeSignature),
         };
 
@@ -355,6 +360,7 @@ impl PrestoTy {
                 ClientTypeSignatureParameter::TypeSignature(t1.into_type_signature()),
                 ClientTypeSignatureParameter::TypeSignature(t2.into_type_signature()),
             ],
+            IpAddress => vec![],
         };
 
         TypeSignature::new(raw_ty, params)
@@ -398,6 +404,7 @@ impl PrestoTy {
                 t2.full_type()
             )
             .into(),
+            IpAddress => RawPrestoTy::IpAddress.to_str().into(),
         }
     }
 
@@ -422,6 +429,7 @@ impl PrestoTy {
             Row(_) => RawPrestoTy::Row,
             Array(_) => RawPrestoTy::Array,
             Map(_, _) => RawPrestoTy::Map,
+            IpAddress => RawPrestoTy::IpAddress,
         }
     }
 }
