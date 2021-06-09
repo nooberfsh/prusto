@@ -1,0 +1,17 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "uuid",
+            "typeSignature": {
+                "rawType": "uuid",
+                "arguments": []
+            }
+        }
+    ],
+    "data": [
+        [
+            "12151fd2-7586-11e9-8f9e-2a86e4085a59"
+        ]
+    ]
+}

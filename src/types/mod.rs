@@ -14,6 +14,7 @@ mod seq;
 mod string;
 pub(self) mod util;
 mod ip_address;
+pub mod uuid;
 
 pub use boolean::*;
 pub use data_set::*;
@@ -31,6 +32,7 @@ pub use row::*;
 pub use seq::*;
 pub use string::*;
 pub use ip_address::*;
+pub use self::uuid::*;
 
 //mod str;
 //pub use self::str::*;
@@ -161,6 +163,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
         (Array(t1), Array(t2)) => extract(t1, t2),
         (Map(t1k, t1v), Map(t2k, t2v)) => Ok(extract(t1k, t2k)?.chain(extract(t1v, t2v)?)),
         (IpAddress, IpAddress) => Ok(vec![]),
+        (Uuid, Uuid) => Ok(vec![]),
         _ => Err(Error::InvalidPrestoType),
     }
 }
@@ -169,13 +172,14 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
 // HyperLogLog QDigest P4HyperLogLog
 // TimestampWithTimeZone TimeWithTimeZone
 // VarBinary
-// Json IpAddress Uuid
+// Json
 // Geometry BingTile
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PrestoTy {
     Date,
     Time,
     Timestamp,
+    Uuid,
     IntervalYearToMonth,
     IntervalDayToSecond,
     Option(Box<PrestoTy>),
@@ -298,6 +302,7 @@ impl PrestoTy {
                 }
             }
             RawPrestoTy::IpAddress => PrestoTy::IpAddress,
+            RawPrestoTy::Uuid => PrestoTy::Uuid,
             _ => return Err(Error::InvalidTypeSignature),
         };
 
@@ -361,6 +366,7 @@ impl PrestoTy {
                 ClientTypeSignatureParameter::TypeSignature(t2.into_type_signature()),
             ],
             IpAddress => vec![],
+            Uuid => vec![],
         };
 
         TypeSignature::new(raw_ty, params)
@@ -405,6 +411,7 @@ impl PrestoTy {
             )
             .into(),
             IpAddress => RawPrestoTy::IpAddress.to_str().into(),
+            Uuid => RawPrestoTy::Uuid.to_str().into(),
         }
     }
 
@@ -430,6 +437,7 @@ impl PrestoTy {
             Array(_) => RawPrestoTy::Array,
             Map(_, _) => RawPrestoTy::Map,
             IpAddress => RawPrestoTy::IpAddress,
+            Uuid => RawPrestoTy::Uuid,
         }
     }
 }
