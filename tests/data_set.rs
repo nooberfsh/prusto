@@ -12,7 +12,7 @@ use maplit::{btreemap, hashmap};
 use serde_json::value::Value;
 
 use prusto::types::{DataSet, Decimal};
-use prusto::{Column, FixedChar, IntervalDay, IntervalYearToMonth, Row};
+use prusto::{Column, FixedChar, IntervalDayToSecond, IntervalYearToMonth, Row};
 use prusto::{Presto, PrestoFloat, PrestoInt, PrestoTy};
 
 fn read(name: &str) -> (String, Value) {
@@ -81,27 +81,33 @@ fn test_interval_year_to_month() {
 
     let d = d.into_vec();
     assert_eq!(d.len(), 1);
-    assert_eq!(d[0].a.total_month(), -112);
-    assert_eq!(d[0].b.total_month(), 6);
-    assert_eq!(d[0].c.total_month(), 72);
+    assert_eq!(d[0].a.total_months(), -112);
+    assert_eq!(d[0].b.total_months(), 6);
+    assert_eq!(d[0].c.total_months(), 72);
 }
 
 #[test]
-fn test_interval_day() {
+fn test_interval_day_to_second() {
     #[derive(Presto, Eq, PartialEq, Debug, Clone)]
     struct A {
-        a: IntervalDay,
-        b: IntervalDay,
+        a: IntervalDayToSecond,
+        b: IntervalDayToSecond,
+        c: IntervalDayToSecond,
+        d: IntervalDayToSecond,
+        e: IntervalDayToSecond,
     }
 
-    let (s, v) = read("interval_day");
+    let (s, v) = read("interval_day_to_second");
     let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
     assert_ds(d.clone(), v);
 
     let d = d.into_vec();
     assert_eq!(d.len(), 1);
-    assert_eq!(d[0].a.interval(), -2);
-    assert_eq!(d[0].b.interval(), 2);
+    assert_eq!(d[0].a.total_seconds(), 123 * 24 * 3600);
+    assert_eq!(d[0].b.total_seconds(), 1 * 24 * 3600 * -1);
+    assert_eq!(d[0].c.total_seconds(), 13 * 3600);
+    assert_eq!(d[0].d.total_seconds(), 11 * 60);
+    assert_eq!(d[0].e.total_seconds(), 611);
 }
 
 #[test]

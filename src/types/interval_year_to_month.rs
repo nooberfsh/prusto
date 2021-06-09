@@ -6,15 +6,15 @@ use super::{Context, Error, Presto, PrestoTy};
 
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
 pub struct IntervalYearToMonth {
-    positive: bool,
-    year: u32,
-    month: u32,
+    negative: bool,
+    years: u32,
+    months: u32,
 }
 
 impl IntervalYearToMonth {
-    pub fn total_month(&self) -> i64 {
-        let total = self.year * 12 + self.month;
-        let sign = if self.positive { 1 } else { -1 };
+    pub fn total_months(&self) -> i64 {
+        let total = self.years * 12 + self.months;
+        let sign = if self.negative { -1 } else { 1 };
         total as i64 * sign
     }
 }
@@ -23,25 +23,25 @@ impl FromStr for IntervalYearToMonth {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (positive, s) = if s.chars().nth(0) == Some('-') {
-            (false, &s[1..])
+        let (negative, s) = if s.chars().nth(0) == Some('-') {
+            (true, &s[1..])
         } else {
-            (true, s)
+            (false, s)
         };
         let parts: Vec<_> = s.split('-').collect();
         if parts.len() != 2 {
             return Err(Error::ParseIntervalMonthFailed);
         }
-        let year = parts[0]
+        let years = parts[0]
             .parse()
             .map_err(|_| Error::ParseIntervalMonthFailed)?;
-        let month = parts[1]
+        let months = parts[1]
             .parse()
             .map_err(|_| Error::ParseIntervalMonthFailed)?;
         Ok(IntervalYearToMonth {
-            positive,
-            year,
-            month,
+            negative,
+            years,
+            months,
         })
     }
 }
@@ -51,8 +51,8 @@ impl Presto for IntervalYearToMonth {
     type Seed<'a, 'de> = IntervalYearToMonthSeed;
 
     fn value(&self) -> Self::ValueType<'_> {
-        let prefix = if self.positive { "" } else { "-" };
-        format!("{}{}-{}", prefix, self.year, self.month)
+        let prefix = if self.negative { "-" } else { "" };
+        format!("{}{}-{}", prefix, self.years, self.months)
     }
     fn ty() -> PrestoTy {
         PrestoTy::IntervalYearToMonth

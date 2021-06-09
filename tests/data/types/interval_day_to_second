@@ -1,0 +1,53 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "interval day to second",
+            "typeSignature": {
+                "rawType": "interval day to second",
+                "arguments": []
+            }
+        },
+        {
+            "name": "b",
+            "type": "interval day to second",
+            "typeSignature": {
+                "rawType": "interval day to second",
+                "arguments": []
+            }
+        },
+        {
+            "name": "c",
+            "type": "interval day to second",
+            "typeSignature": {
+                "rawType": "interval day to second",
+                "arguments": []
+            }
+        },
+        {
+            "name": "d",
+            "type": "interval day to second",
+            "typeSignature": {
+                "rawType": "interval day to second",
+                "arguments": []
+            }
+        },
+        {
+            "name": "e",
+            "type": "interval day to second",
+            "typeSignature": {
+                "rawType": "interval day to second",
+                "arguments": []
+            }
+        }
+    ],
+    "data": [
+        [
+            "123 00:00:00.000",
+            "-1 00:00:00.000",
+            "0 13:00:00.000",
+            "0 00:11:00.000",
+            "0 00:10:11.000"
+        ]
+    ]
+}
