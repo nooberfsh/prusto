@@ -27,8 +27,8 @@ pub struct UuidSeed;
 impl<'de> DeserializeSeed<'de> for UuidSeed {
     type Value = Uuid;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         <Uuid as Deserialize<'de>>::deserialize(deserializer)
     }

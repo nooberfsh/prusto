@@ -20,7 +20,7 @@ impl Presto for IpAddr {
     }
 
     fn empty() -> Self {
-        IpAddr::V4(Ipv4Addr::new(0,0,0,0))
+        IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0))
     }
 }
 
@@ -29,8 +29,8 @@ pub struct IpAddrSeed;
 impl<'de> DeserializeSeed<'de> for IpAddrSeed {
     type Value = IpAddr;
     fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let s = <&'de str as Deserialize<'de>>::deserialize(deserializer)?;
         let d = IpAddr::from_str(s).map_err(de::Error::custom)?;
