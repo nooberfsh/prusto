@@ -169,10 +169,10 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
 }
 
 // TODO:
-// HyperLogLog QDigest P4HyperLogLog
+// VarBinary Json
 // TimestampWithTimeZone TimeWithTimeZone
-// VarBinary
-// Json
+// HyperLogLog P4HyperLogLog
+// QDigest
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PrestoTy {
     Date,
