@@ -163,9 +163,8 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
 }
 
 // TODO:
-// Date,
 // HyperLogLog QDigest P4HyperLogLog
-// TimestampWithTimeZone Time TimeWithTimeZone
+// TimestampWithTimeZone TimeWithTimeZone
 // VarBinary
 // Json IpAddress Uuid
 // Geometry BingTile
