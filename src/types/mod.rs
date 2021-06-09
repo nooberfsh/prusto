@@ -173,7 +173,6 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
 // TimestampWithTimeZone TimeWithTimeZone
 // VarBinary
 // Json
-// Geometry BingTile
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PrestoTy {
     Date,

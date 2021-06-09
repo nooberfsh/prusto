@@ -32,8 +32,6 @@ pub enum RawPrestoTy {
     Json,
     IpAddress,
     Uuid,
-    Geometry,
-    BingTile,
     Unknown,
 }
 
@@ -68,8 +66,6 @@ impl RawPrestoTy {
             Json => "json",
             IpAddress => "ipaddress",
             Uuid => "uuid",
-            Geometry => "Geometry",
-            BingTile => "BingTile",
             Unknown => "unknown",
         }
     }
@@ -104,8 +100,6 @@ impl RawPrestoTy {
             "json" => Json,
             "ipaddress" => IpAddress,
             "uuid" => Uuid,
-            "Geometry" => Geometry,
-            "BingTile" => BingTile,
             "unknown" => Unknown,
             _ => return None,
         };
