@@ -1,6 +1,6 @@
 # Prusto
 
-A [presto/trino](https://trino.io/) client library written in rust.
+A [trino (f.k.a. prestosql)](https://trino.io/) client library written in rust.
 
 
 ## Prerequisites
