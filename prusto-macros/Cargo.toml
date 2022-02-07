@@ -2,7 +2,7 @@
 name = "prusto-macros"
 version = "0.1.0"
 authors = ["nooberfsh <nooberfsh@gmail.com>"]
-edition = "2018"
+edition = "2021"
 description = "prusto macros"
 license = "MIT"
 repository = "https://github.com/nooberfsh/prusto"
