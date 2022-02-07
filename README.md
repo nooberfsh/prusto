@@ -12,7 +12,7 @@ A [trino (f.k.a. prestosql)](https://trino.io/) client library written in rust.
 ```toml
 # Cargo.toml
 [dependencies]
-prusto = "0.3"
+prusto = "0.4"
 ```
 
 ## Example
