@@ -6,7 +6,10 @@ use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
 use super::{Context, Presto, PrestoTy};
 
 impl<T: Presto> Presto for Option<T> {
-    type ValueType<'a> where T: 'a, = Option<T::ValueType<'a>>;
+    type ValueType<'a>
+    where
+        T: 'a,
+    = Option<T::ValueType<'a>>;
     type Seed<'a, 'de> = OptionSeed<'a, T>;
 
     fn value(&self) -> Self::ValueType<'_> {
