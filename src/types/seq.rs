@@ -16,7 +16,7 @@ macro_rules! gen_seq {
     };
     ($ty:ident < $($bound:ident ),* >,  $insert:ident, $seed:ident) => {
         impl<T: Presto + $($bound+)*> Presto for $ty<T> {
-            type ValueType<'a> = impl Serialize;
+            type ValueType<'a> where T: 'a = impl Serialize;
             type Seed<'a, 'de> = $seed<'a, T>;
 
             fn value(&self) -> Self::ValueType<'_> {
