@@ -508,5 +508,5 @@ fn decode_kv_from_header(input: &HeaderValue) -> Option<(String, String)> {
     }
     let k = kv[0].to_string();
     let v = urlencoding::decode(kv[1]).ok()?;
-    Some((k, v))
+    Some((k, v.to_string()))
 }
