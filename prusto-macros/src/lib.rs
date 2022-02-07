@@ -28,6 +28,7 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
         .clone()
         .map(|ident| LitStr::new(&format!("{}", ident), ident.span()));
     let types = fields.iter().map(|f| &f.ty);
+    let types1 = types.clone();
 
     let keys2 = keys.clone();
     let types2 = types.clone();
@@ -46,7 +47,7 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
     let impl_trait_block = quote! {
 
         impl #impl_generics ::prusto::types::Presto for #name #ty_generics #where_clause {
-            type ValueType<'_a> = ( #(<#types as ::prusto::types::Presto>::ValueType<'_a>, )* );
+            type ValueType<'_a> where #(#types: '_a ,)* = ( #(<#types1 as ::prusto::types::Presto>::ValueType<'_a>, )* );
             type Seed<'_a, '_de> = #seed_name #seed_ty_generics;
 
             fn value(&self) -> Self::ValueType<'_>  {

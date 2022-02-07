@@ -66,7 +66,7 @@ pub enum Error {
 }
 
 pub trait Presto {
-    type ValueType<'a>: Serialize;
+    type ValueType<'a>: Serialize where Self: 'a;
     type Seed<'a, 'de>: DeserializeSeed<'de, Value = Self>;
 
     fn value(&self) -> Self::ValueType<'_>;
