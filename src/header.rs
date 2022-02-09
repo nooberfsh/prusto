@@ -1,4 +1,4 @@
-// request headers
+// request headers for trino
 pub static HEADER_USER: &str = "X-Trino-User";
 pub static HEADER_SOURCE: &str = "X-Trino-Source";
 pub static HEADER_CATALOG: &str = "X-Trino-Catalog";

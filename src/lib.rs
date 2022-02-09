@@ -6,7 +6,10 @@
 pub mod auth;
 pub mod client;
 pub mod error;
+#[cfg(not(feature = "presto"))]
 mod header;
+#[cfg(feature = "presto")]
+mod presto_header;
 pub mod models;
 pub mod selected_role;
 pub mod session;

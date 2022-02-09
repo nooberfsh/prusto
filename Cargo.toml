@@ -16,6 +16,10 @@ readme = "README.md"
 [workspace]
 members = [".", "prusto-macros"]
 
+[features]
+default = []
+presto = []
+
 [dependencies]
 # self dependencies
 prusto-macros = { version = "0.2", path = "prusto-macros"}
