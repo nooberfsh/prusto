@@ -1,6 +1,6 @@
 # Prusto
 
-A [trino (f.k.a. prestosql)](https://trino.io/) client library written in rust.
+A [presto/trino](https://trino.io/) client library written in rust.
 
 
 ## Prerequisites
@@ -13,6 +13,13 @@ A [trino (f.k.a. prestosql)](https://trino.io/) client library written in rust.
 # Cargo.toml
 [dependencies]
 prusto = "0.4"
+```
+
+In order to use this crate as presto client, enable "presto" feature.
+```toml
+# Cargo.toml
+[dependencies]
+prusto = { version = "0.4", features = ["presto"] }
 ```
 
 ## Example

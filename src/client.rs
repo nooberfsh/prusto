@@ -12,7 +12,10 @@ use tokio::time::{sleep, Duration};
 
 use crate::auth::Auth;
 use crate::error::{Error, Result};
+#[cfg(not(feature = "presto"))]
 use crate::header::*;
+#[cfg(feature = "presto")]
+use crate::presto_header::*;
 use crate::selected_role::SelectedRole;
 use crate::session::{Session, SessionBuilder};
 use crate::transaction::TransactionId;
