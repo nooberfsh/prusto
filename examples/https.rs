@@ -1,11 +1,11 @@
 #![allow(incomplete_features)]
-#![feature(generic_associated_types)]
 
 use std::env::var;
 
 use dotenv::dotenv;
 use prusto::auth::Auth;
 use prusto::{ClientBuilder, Row};
+use prusto::ssl::Ssl;
 
 #[tokio::main]
 async fn main() {
@@ -24,6 +24,9 @@ async fn main() {
         .catalog(catalog)
         .auth(auth)
         .secure(true)
+        .ssl(Ssl {
+            root_cert: Some(Ssl::cert_from_pem("/path/root.pem").unwrap()),
+        })
         .build()
         .unwrap();
 

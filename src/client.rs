@@ -18,6 +18,7 @@ use crate::header::*;
 use crate::presto_header::*;
 use crate::selected_role::SelectedRole;
 use crate::session::{Session, SessionBuilder};
+use crate::ssl::Ssl;
 use crate::transaction::TransactionId;
 use crate::{DataSet, Presto, QueryResult, Row};
 
@@ -38,6 +39,7 @@ pub struct ClientBuilder {
     session: SessionBuilder,
     auth: Option<Auth>,
     max_attempt: usize,
+    ssl: Option<Ssl>,
 }
 
 #[derive(Debug)]
@@ -52,6 +54,7 @@ impl ClientBuilder {
             session: builder,
             auth: None,
             max_attempt: 3,
+            ssl: None,
         }
     }
 
@@ -178,21 +181,33 @@ impl ClientBuilder {
         self
     }
 
+    pub fn ssl(mut self, ssl: Ssl) -> Self {
+        self.ssl = Some(ssl);
+        self
+    }
+
     pub fn build(self) -> Result<Client> {
         let session = self.session.build()?;
         let max_attempt = self.max_attempt;
-        let client = reqwest::ClientBuilder::new()
-            .timeout(session.client_request_timeout)
-            .build()
-            .unwrap();
+
         if self.auth.is_some() && session.url.scheme() == "http" {
             return Err(Error::BasicAuthWithHttp);
         }
+
+        let mut client_builder =
+            reqwest::ClientBuilder::new().timeout(session.client_request_timeout);
+
+        if let Some(ssl) = &self.ssl {
+            if let Some(root) = &ssl.root_cert {
+                client_builder = client_builder.add_root_certificate(root.clone());
+            }
+        }
+
         let cli = Client {
             auth: self.auth,
             url: session.url.clone(),
             session: RwLock::new(session),
-            client,
+            client: client_builder.build()?,
             max_attempt,
         };
 
