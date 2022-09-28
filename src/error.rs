@@ -36,6 +36,8 @@ pub enum Error {
     ReachMaxAttempt(usize),
     #[error("invalid host: {0}")]
     InvalidHost(String),
+    #[error("internal error: {0}")]
+    InternalError(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
