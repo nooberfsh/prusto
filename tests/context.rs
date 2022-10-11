@@ -1,5 +1,4 @@
 #![allow(incomplete_features)]
-#![feature(generic_associated_types)]
 
 use prusto::types::{Context, PrestoTy};
 use prusto::Presto;

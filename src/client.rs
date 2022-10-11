@@ -199,7 +199,7 @@ impl ClientBuilder {
 
         if let Some(ssl) = &self.ssl {
             if let Some(root) = &ssl.root_cert {
-                client_builder = client_builder.add_root_certificate(root.clone());
+                client_builder = client_builder.add_root_certificate(root.0.clone());
             }
         }
 

@@ -25,7 +25,7 @@ async fn main() {
         .auth(auth)
         .secure(true)
         .ssl(Ssl {
-            root_cert: Some(Ssl::cert_from_pem("/path/root.pem").unwrap()),
+            root_cert: Some(Ssl::read_pem(&"/path/root.pem").unwrap()),
         })
         .build()
         .unwrap();
