@@ -19,7 +19,7 @@ impl Default for Ssl {
 }
 
 impl Ssl {
-    pub fn read_pem<P: AsRef<Path> + std::fmt::Display>(root_certificate_path: &P) -> Result<Certificate> {
+    pub fn read_pem<P: AsRef<Path>>(root_certificate_path: &P) -> Result<Certificate> {
         let buf = Self::read_file(&root_certificate_path)?;
         match reqwest::Certificate::from_pem(&buf) {
             Ok(cert) => Ok(Certificate { 0: cert }),
@@ -27,7 +27,7 @@ impl Ssl {
         }
     }
 
-    pub fn read_der<P: AsRef<Path> + std::fmt::Display>(root_certificate_path: &P) -> Result<Certificate> {
+    pub fn read_der<P: AsRef<Path>>(root_certificate_path: &P) -> Result<Certificate> {
         let buf = Self::read_file(&root_certificate_path)?;
         match reqwest::Certificate::from_der(&buf) {
             Ok(cert) => Ok(Certificate { 0: cert }),
@@ -35,15 +35,15 @@ impl Ssl {
         }
     }
 
-    pub fn read_file<P: AsRef<Path> + std::fmt::Display>(file_path: &P) -> Result<Vec<u8>> {
+    fn read_file<P: AsRef<Path>>(file_path: &P) -> Result<Vec<u8>> {
         let mut buf = Vec::new();
         std::fs::File::open(file_path)
             .map_err(|e| {
-                crate::error::Error::InternalError(format!("Error opening file {}. {}", file_path, e))
+                crate::error::Error::InternalError(format!("Error opening file {}. {}", file_path.as_ref().display(), e))
             })?
             .read_to_end(&mut buf)
             .map_err(|e| {
-                crate::error::Error::InternalError(format!("Error reading file {}. {}", file_path, e))
+                crate::error::Error::InternalError(format!("Error reading file {}. {}", file_path.as_ref().display(), e))
             })?;
             
         Ok(buf)
