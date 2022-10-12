@@ -1,5 +1,4 @@
 #![allow(incomplete_features)]
-#![feature(generic_associated_types)]
 
 use std::fs::File;
 use std::io::Read;
