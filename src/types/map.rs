@@ -12,22 +12,8 @@ use super::{Context, Presto, PrestoMapKey, PrestoTy};
 
 macro_rules! gen_map {
     ($ty:ident < $($bound:ident ),* >,  $seed:ident) => {
-        // TODO: remove 'static for K V
-        // workaround: add 'static bound to avoid compile error, compiler version: rustc 1.49.0-nightly (3525087ad 2020-10-08)
-        // error[E0309]: the parameter type `K` may not live long enough
-        //   --> src/types/map.rs:16:34
-        //    |
-        // 16 |             type ValueType<'a> = impl Serialize;
-        //    |                                  ^^^^^^^^^^^^^^
-        // ...
-        // 93 | gen_map!(BTreeMap<Ord>, BTreeMapSeed);
-        //    | -------------------------------------- in this macro invocation
-        //    |
-        //    = help: consider adding an explicit lifetime bound `K: 'a`...
-        //    = note: ...so that the type `K` will meet its required lifetime bounds
-        //    = note: this error originates in a macro (in Nightly builds, run with -Z macro-backtrace for more info)
-        impl<K: 'static + PrestoMapKey + $($bound+)*, V: 'static + Presto> Presto for $ty<K, V> {
-            type ValueType<'a> = impl Serialize;
+        impl<K: PrestoMapKey + $($bound+)*, V: Presto> Presto for $ty<K, V> {
+            type ValueType<'a> = impl Serialize + 'a where K: 'a, V: 'a;
             type Seed<'a, 'de> = $seed<'a, K, V>;
 
             fn value(&self) -> Self::ValueType<'_> {
