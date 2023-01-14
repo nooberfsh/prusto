@@ -30,8 +30,8 @@ derive_more = "0.99"
 bigdecimal = "0.3"
 thiserror = "1.0"
 chrono = "0.4"
-chrono-tz = "0.6"
-iterable = "0.5"
+chrono-tz = "0.8"
+iterable = "0.6"
 log = "0.4"
 lazy_static = "1.4"
 regex = "1.5"
@@ -42,7 +42,7 @@ futures-async-stream = "0.2"
 http = "0.2"
 tokio = { version = "1.16", features = ["full"]}
 urlencoding = "2.1"
-uuid = { version = "0.8", features = ["serde", "v4"] }
+uuid = { version = "1.2", features = ["serde", "v4"] }
 
 [dev-dependencies]
 trybuild = "1.0"

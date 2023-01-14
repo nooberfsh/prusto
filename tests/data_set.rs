@@ -118,7 +118,7 @@ fn test_uuid() {
     let d = d.into_vec();
     assert_eq!(d.len(), 1);
     assert_eq!(
-        d[0].a.to_hyphenated().to_string(),
+        d[0].a.hyphenated().to_string(),
         "12151fd2-7586-11e9-8f9e-2a86e4085a59"
     );
 }
