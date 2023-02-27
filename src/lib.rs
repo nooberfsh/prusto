@@ -1,5 +1,4 @@
 #![feature(type_alias_impl_trait)]
-#![feature(generators)]
 
 pub mod auth;
 pub mod client;

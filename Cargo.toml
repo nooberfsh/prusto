@@ -38,7 +38,6 @@ regex = "1.5"
 # network dependencies
 reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "json"]}
 futures = "0.3"
-futures-async-stream = "0.2"
 http = "0.2"
 tokio = { version = "1.16", features = ["full"]}
 urlencoding = "2.1"

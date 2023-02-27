@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet};
 
-use futures_async_stream::try_stream;
 use http::header::{ACCEPT_ENCODING, USER_AGENT};
 use http::StatusCode;
 use iterable::*;
@@ -382,23 +381,6 @@ fn need_retry(e: &Error) -> bool {
 }
 
 impl Client {
-    #[try_stream(ok = DataSet<T>, error = Error)]
-    pub async fn get_stream<T: Presto + Unpin + 'static>(&self, sql: String) {
-        let res = self.get_retry::<T>(sql).await?;
-        if let Some(e) = res.error {
-            Err(Error::QueryError(e))?;
-        } else {
-            let mut next = res.next_uri;
-            while let Some(url) = next {
-                let res = self.get_next_retry(&url).await?;
-                next = res.next_uri;
-                if let Some(d) = res.data_set {
-                    yield d
-                }
-            }
-        }
-    }
-
     pub async fn get_all<T: Presto + 'static>(&self, sql: String) -> Result<DataSet<T>> {
         let res = self.get_retry(sql).await?;
         let mut ret = res.data_set;
