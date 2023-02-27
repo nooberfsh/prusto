@@ -416,11 +416,11 @@ impl Client {
     }
 
     async fn get_retry<T: Presto + 'static>(&self, sql: String) -> Result<QueryResult<T>> {
-        retry!(&self, get, sql, self.max_attempt)
+        retry!(self, get, sql, self.max_attempt)
     }
 
     async fn get_next_retry<T: Presto + 'static>(&self, url: &str) -> Result<QueryResult<T>> {
-        retry!(&self, get_next, url, self.max_attempt)
+        retry!(self, get_next, url, self.max_attempt)
     }
 
     async fn get<T: Presto + 'static>(&self, sql: String) -> Result<QueryResult<T>> {
@@ -502,7 +502,7 @@ fn encode_kv(k: &str, v: &str) -> String {
 
 fn decode_kv_from_header(input: &HeaderValue) -> Option<(String, String)> {
     let s = input.to_str().ok()?;
-    let kv = s.split("=").collect::<Vec<_>>();
+    let kv = s.split('=').collect::<Vec<_>>();
     if kv.len() != 2 {
         return None;
     }

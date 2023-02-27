@@ -22,7 +22,7 @@ impl Ssl {
     pub fn read_pem<P: AsRef<Path>>(root_certificate_path: &P) -> Result<Certificate> {
         let buf = Self::read_file(&root_certificate_path)?;
         match reqwest::Certificate::from_pem(&buf) {
-            Ok(cert) => Ok(Certificate { 0: cert }),
+            Ok(cert) => Ok(Certificate (cert )),
             Err(e) => Err(crate::error::Error::InternalError(format!("Cannot load PEM certificate {:?}", e)))
         }
     }
@@ -30,7 +30,7 @@ impl Ssl {
     pub fn read_der<P: AsRef<Path>>(root_certificate_path: &P) -> Result<Certificate> {
         let buf = Self::read_file(&root_certificate_path)?;
         match reqwest::Certificate::from_der(&buf) {
-            Ok(cert) => Ok(Certificate { 0: cert }),
+            Ok(cert) => Ok(Certificate (cert )),
             Err(e) => Err(crate::error::Error::InternalError(format!("Cannot load DER certificate {:?}", e)))
         }
     }

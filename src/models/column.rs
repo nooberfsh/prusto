@@ -128,7 +128,7 @@ impl<'de> Deserialize<'de> for ClientTypeSignatureParameter {
             }
         }
 
-        const FIELDS: &'static [&'static str] = &["kind", "value"];
+        const FIELDS: &[&str] = &["kind", "value"];
         deserializer.deserialize_struct("ClientTypeSignatureParameter", FIELDS, ParamVisitor)
     }
 }

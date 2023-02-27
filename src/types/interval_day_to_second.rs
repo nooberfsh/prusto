@@ -33,7 +33,7 @@ impl FromStr for IntervalDayToSecond {
             return Err(Error::ParseIntervalDayFailed);
         }
 
-        let negative = parts[0].chars().nth(0) == Some('-');
+        let negative = parts[0].starts_with('-');
         let day: i64 = parts[0]
             .parse()
             .map_err(|_| Error::ParseIntervalDayFailed)?;
@@ -42,11 +42,11 @@ impl FromStr for IntervalDayToSecond {
             .map_err(|_| Error::ParseIntervalDayFailed)?;
         let d = IntervalDayToSecond {
             negative,
-            days: day.abs() as u64,
+            days: day.unsigned_abs(),
             hours: time.hour() as u8,
             minutes: time.minute() as u8,
             seconds: time.second() as u8,
-            milliseconds: time.nanosecond() / 1000_000,
+            milliseconds: time.nanosecond() / 1_000_000,
         };
         Ok(d)
     }

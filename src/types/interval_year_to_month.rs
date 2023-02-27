@@ -23,11 +23,12 @@ impl FromStr for IntervalYearToMonth {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (negative, s) = if s.chars().nth(0) == Some('-') {
-            (true, &s[1..])
+        let (negative, s) = if let Some(stripped) = s.strip_prefix('-') {
+            (true,  stripped )
         } else {
             (false, s)
         };
+
         let parts: Vec<_> = s.split('-').collect();
         if parts.len() != 2 {
             return Err(Error::ParseIntervalMonthFailed);
