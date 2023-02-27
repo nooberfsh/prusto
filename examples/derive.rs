@@ -1,5 +1,3 @@
-#![allow(incomplete_features)]
-
 use std::env::var;
 
 use dotenv::dotenv;
