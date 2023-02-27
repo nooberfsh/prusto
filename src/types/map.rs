@@ -5,23 +5,29 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use serde::de::{DeserializeSeed, Deserializer, MapAccess, Visitor};
-use serde::Serialize;
 
-use super::util::SerializePairIterator;
+use super::util::SerializeVecMap;
 use super::{Context, Presto, PrestoMapKey, PrestoTy};
 
 macro_rules! gen_map {
     ($ty:ident < $($bound:ident ),* >,  $seed:ident) => {
         impl<K: PrestoMapKey + $($bound+)*, V: Presto> Presto for $ty<K, V> {
-            type ValueType<'a> = impl Serialize + 'a where K: 'a, V: 'a;
+            // TODO: use impl trait after https://github.com/rust-lang/rust/issues/63063 stablized.
+            // type ValueType<'a> = impl Serialize + 'a where K: 'a, V: 'a;
+            type ValueType<'a> = SerializeVecMap<K::ValueType<'a>, V::ValueType<'a>> where K: 'a, V: 'a;
             type Seed<'a, 'de> = $seed<'a, K, V>;
 
+            // fn value(&self) -> Self::ValueType<'_> {
+            //     let iter = self.iter().map(|(k, v)| (k.value(), v.value()));
+            //
+            //     SerializePairIterator {
+            //         iter,
+            //         size: Some(self.len()),
+            //     }
+            // }
             fn value(&self) -> Self::ValueType<'_> {
-                let iter = self.iter().map(|(k, v)| (k.value(), v.value()));
-
-                SerializePairIterator {
-                    iter,
-                    size: Some(self.len()),
+                SerializeVecMap {
+                    iter: self.iter().map(|(k, v)| (k.value(), v.value())).collect()
                 }
             }
 

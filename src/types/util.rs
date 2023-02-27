@@ -47,3 +47,24 @@ where
         s.end()
     }
 }
+
+pub struct SerializeVecMap<K: Serialize, V: Serialize> {
+    pub iter: Vec<(K, V)>,
+}
+
+impl<K, V> Serialize for SerializeVecMap<K, V>
+where
+    K: Serialize,
+    V: Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_map(Some(self.iter.len()))?;
+        for (k, v) in &self.iter {
+            s.serialize_entry(&k, &v)?;
+        }
+        s.end()
+    }
+}

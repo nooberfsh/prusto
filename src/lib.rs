@@ -1,4 +1,3 @@
-#![feature(type_alias_impl_trait)]
 #![allow(clippy::should_implement_trait)]
 #![allow(clippy::derivable_impls)]
 

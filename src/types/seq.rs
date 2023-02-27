@@ -5,9 +5,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 
 use serde::de::{DeserializeSeed, Deserializer, SeqAccess, Visitor};
-use serde::Serialize;
 
-use super::util::SerializeIterator;
 use super::{Context, Presto, PrestoTy};
 
 macro_rules! gen_seq {
@@ -16,16 +14,21 @@ macro_rules! gen_seq {
     };
     ($ty:ident < $($bound:ident ),* >,  $insert:ident, $seed:ident) => {
         impl<T: Presto + $($bound+)*> Presto for $ty<T> {
-            type ValueType<'a> = impl Serialize + 'a where T: 'a;
+            // TODO: use impl trait after https://github.com/rust-lang/rust/issues/63063 stablized.
+            // type ValueType<'a> = impl Serialize + 'a where T: 'a;
+            type ValueType<'a> = Vec<T::ValueType<'a>> where T: 'a;
             type Seed<'a, 'de> = $seed<'a, T>;
 
+            // fn value(&self) -> Self::ValueType<'_> {
+            //     let iter = self.iter().map(|t| t.value());
+            //
+            //     SerializeIterator {
+            //         iter,
+            //         size: Some(self.len()),
+            //     }
+            // }
             fn value(&self) -> Self::ValueType<'_> {
-                let iter = self.iter().map(|t| t.value());
-
-                SerializeIterator {
-                    iter,
-                    size: Some(self.len()),
-                }
+                self.iter().map(|t| t.value()).collect()
             }
 
             fn ty() -> PrestoTy {
