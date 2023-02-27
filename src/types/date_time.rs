@@ -72,7 +72,10 @@ gen_date_time!(
     NaiveDateTimeSeed,
     PrestoTy::Timestamp,
     "%Y-%m-%d %H:%M:%S%.3f",
-    NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap(),
+    NaiveDate::from_ymd_opt(1970, 1, 1)
+        .unwrap()
+        .and_hms_opt(0, 0, 0)
+        .unwrap(),
     "naive time"
 );
 gen_date_time!(

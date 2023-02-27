@@ -383,7 +383,10 @@ fn test_date_time() {
 
     let a = NaiveDate::from_ymd_opt(2001, 8, 22).unwrap();
     let b = NaiveTime::from_hms_milli_opt(1, 2, 3, 456).unwrap();
-    let c = NaiveDate::from_ymd_opt(2001, 8, 22).unwrap().and_hms_milli_opt(3, 4, 5, 321).unwrap();
+    let c = NaiveDate::from_ymd_opt(2001, 8, 22)
+        .unwrap()
+        .and_hms_milli_opt(3, 4, 5, 321)
+        .unwrap();
     assert_eq!(d[0], A { a, b, c });
 }
 

@@ -24,7 +24,7 @@ impl FromStr for IntervalYearToMonth {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (negative, s) = if let Some(stripped) = s.strip_prefix('-') {
-            (true,  stripped )
+            (true, stripped)
         } else {
             (false, s)
         };
