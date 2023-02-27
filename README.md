@@ -3,31 +3,25 @@
 A [presto/trino](https://trino.io/) client library written in rust.
 
 
-## Prerequisites
- - latest rust nightly compiler
- 
 
 ## Installation 
 
 ```toml
 # Cargo.toml
 [dependencies]
-prusto = "0.4"
+prusto = "0.5"
 ```
 
 In order to use this crate as presto client, enable "presto" feature.
 ```toml
 # Cargo.toml
 [dependencies]
-prusto = { version = "0.4", features = ["presto"] }
+prusto = { version = "0.5", features = ["presto"] }
 ```
 
 ## Example
 
 ```rust
-#![allow(incomplete_features)]
-#![feature(generic_associated_types)]
-
 use prusto::{ClientBuilder, Presto};
 
 #[derive(Presto, Debug)]
