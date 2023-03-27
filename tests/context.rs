@@ -1,6 +1,6 @@
 #![allow(incomplete_features)]
 
-use prusto::types::{Context, PrestoTy};
+use prusto::types::{Context, Presto, PrestoTy};
 use prusto::Presto;
 
 #[derive(Presto)]

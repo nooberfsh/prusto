@@ -14,7 +14,7 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
-members = [".", "prusto-macros"]
+members = [".", "prusto-macros", "prusto-model"]
 
 [features]
 default = []
@@ -23,11 +23,10 @@ presto = []
 [dependencies]
 # self dependencies
 prusto-macros = { version = "0.2", path = "prusto-macros"}
+prusto-model = { version = "0.1", path = "prusto-model"}
 # third party dependencies
 serde = { version = "1.0", features = ["derive"]}
 serde_json = "1.0"
-derive_more = "0.99"
-bigdecimal = "0.3"
 thiserror = "1.0"
 chrono = "0.4"
 chrono-tz = "0.8"

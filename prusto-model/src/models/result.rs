@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 use super::*;
-use crate::{DataSet, Presto};
+use crate::types::{DataSet, Presto};
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]

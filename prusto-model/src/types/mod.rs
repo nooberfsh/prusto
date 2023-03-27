@@ -47,7 +47,7 @@ use iterable::*;
 use serde::de::DeserializeSeed;
 use serde::Serialize;
 
-use crate::{
+use super::models::{
     ClientTypeSignatureParameter, Column, NamedTypeSignature, RawPrestoTy, RowFieldName,
     TypeSignature,
 };

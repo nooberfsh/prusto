@@ -2,7 +2,7 @@ use reqwest::header::HeaderName;
 use reqwest::StatusCode;
 use thiserror::Error;
 
-use crate::models::QueryError;
+use prusto_model::models::QueryError;
 
 #[derive(Error, Debug)]
 pub enum Error {

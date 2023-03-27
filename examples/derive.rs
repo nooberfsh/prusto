@@ -1,7 +1,9 @@
 use std::env::var;
 
 use dotenv::dotenv;
-use prusto::{ClientBuilder, Presto};
+use prusto::types::Presto;
+use prusto::ClientBuilder;
+use prusto_macros::Presto;
 
 #[derive(Presto, Debug)]
 struct Foo {
