@@ -3,7 +3,9 @@
 use std::fs::File;
 use std::io::Read;
 
-use prusto::{Presto, QueryResult, Row};
+use prusto::models::QueryResult;
+use prusto::types::{Presto, Row};
+use prusto_macros::Presto;
 
 fn read(name: &str) -> String {
     let p = "tests/data/models/".to_string() + name;

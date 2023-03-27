@@ -1,7 +1,7 @@
 use serde::de::{Deserialize, DeserializeSeed, Deserializer};
 use serde_json::Value;
 
-use crate::{Context, Presto, PrestoTy};
+use crate::types::{Context, Presto, PrestoTy};
 
 #[derive(Debug, Clone)]
 pub struct Row {

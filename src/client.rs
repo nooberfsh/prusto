@@ -11,15 +11,20 @@ use tokio::time::{sleep, Duration};
 
 use crate::auth::Auth;
 use crate::error::{Error, Result};
+
 #[cfg(not(feature = "presto"))]
 use crate::header::*;
+
 #[cfg(feature = "presto")]
 use crate::presto_header::*;
+
 use crate::selected_role::SelectedRole;
 use crate::session::{Session, SessionBuilder};
 use crate::ssl::Ssl;
 use crate::transaction::TransactionId;
-use crate::{DataSet, Presto, QueryResult, Row};
+
+use prusto_model::models::QueryResult;
+use prusto_model::types::{DataSet, Presto, Row};
 
 // TODO:
 // allow_redirects

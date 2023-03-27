@@ -1,5 +1,6 @@
 #![allow(incomplete_features)]
 
+use prusto::types::Presto;
 use prusto::Presto;
 
 #[derive(Presto)]

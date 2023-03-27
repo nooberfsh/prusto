@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use super::util::SerializeIterator;
 use super::{Context, Error, Presto, PrestoTy, VecSeed};
 use crate::models::Column;
-use crate::Row;
+use crate::types::Row;
 
 #[derive(Debug)]
 pub struct DataSet<T: Presto> {
@@ -53,7 +53,7 @@ impl<T: Presto> DataSet<T> {
         self.data.as_slice()
     }
 
-    pub(crate) fn merge(&mut self, other: DataSet<T>) {
+    pub fn merge(&mut self, other: DataSet<T>) {
         self.data.extend(other.data)
     }
 }

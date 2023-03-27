@@ -10,9 +10,11 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use maplit::{btreemap, hashmap};
 use serde_json::value::Value;
 
-use prusto::types::{DataSet, Decimal};
-use prusto::{Column, FixedChar, IntervalDayToSecond, IntervalYearToMonth, Row};
-use prusto::{Presto, PrestoFloat, PrestoInt, PrestoTy};
+use prusto::models::Column;
+use prusto::types::{DataSet, Decimal, FixedChar, IntervalDayToSecond, IntervalYearToMonth, Row};
+use prusto::types::{Presto, PrestoFloat, PrestoInt, PrestoTy};
+use prusto::Presto;
+
 use std::net::IpAddr;
 use uuid::Uuid;
 

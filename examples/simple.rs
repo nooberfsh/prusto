@@ -1,7 +1,8 @@
 use std::env::var;
 
 use dotenv::dotenv;
-use prusto::{ClientBuilder, Row};
+use prusto::ClientBuilder;
+use prusto_model::types::Row;
 
 #[tokio::main]
 async fn main() {
