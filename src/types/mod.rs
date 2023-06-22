@@ -39,13 +39,14 @@ pub use string::*;
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fmt;
 use std::iter::FromIterator;
 use std::sync::Arc;
 
-use derive_more::Display;
 use iterable::*;
 use serde::de::DeserializeSeed;
 use serde::Serialize;
+use strum::Display;
 
 use crate::{
     ClientTypeSignatureParameter, Column, NamedTypeSignature, RawPrestoTy, RowFieldName,
@@ -53,7 +54,7 @@ use crate::{
 };
 
 //TODO: refine it
-#[derive(Display, Debug)]
+#[derive(Debug, Display)]
 pub enum Error {
     InvalidPrestoType,
     InvalidColumn,
@@ -61,6 +62,7 @@ pub enum Error {
     ParseDecimalFailed(String),
     ParseIntervalMonthFailed,
     ParseIntervalDayFailed,
+    ParseRoleFailed,
     EmptyInPrestoRow,
     NonePrestoRow,
 }
@@ -198,7 +200,58 @@ pub enum PrestoTy {
     Unknown,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+impl fmt::Display for PrestoTy {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use PrestoTy::*;
+
+        match self {
+            Date => write!(f, "{}", RawPrestoTy::Date)?,
+            Time => write!(f, "{}", RawPrestoTy::Time)?,
+            Timestamp => write!(f, "{}", RawPrestoTy::Timestamp)?,
+            Uuid => write!(f, "{}", RawPrestoTy::Uuid)?,
+            IntervalYearToMonth => write!(f, "{}", RawPrestoTy::IntervalYearToMonth)?,
+            IntervalDayToSecond => write!(f, "{}", RawPrestoTy::IntervalDayToSecond)?,
+            Option(ty) => write!(f, "{}", *ty)?,
+            Boolean => write!(f, "{}", RawPrestoTy::Boolean)?,
+            PrestoInt(ty) => write!(f, "{}", RawPrestoTy::from(*ty))?,
+            PrestoFloat(ty) => write!(f, "{}", RawPrestoTy::from(*ty))?,
+            Varchar => write!(f, "{}", RawPrestoTy::VarChar)?,
+            Char(a) => write!(f, "{}({})", RawPrestoTy::Char, a)?,
+            Tuple(ts) => write!(
+                f,
+                "{}({})",
+                RawPrestoTy::Row,
+                ts.lazy_map(|ty| ty.to_string()).join(",")
+            )?,
+            Row(ts) => write!(
+                f,
+                "{}({})",
+                RawPrestoTy::Row,
+                ts.lazy_map(|(name, ty)| format!("{} {}", name, ty)).join(",")
+            )?,
+            Array(ty) => write!(
+                f,
+                "{}({})",
+                RawPrestoTy::Array,
+                *ty,
+            )?,
+            Map(ty1, ty2) => write!(
+                f,
+                "{}({},{})",
+                RawPrestoTy::Map,
+                *ty1,
+                *ty2,
+            )?,
+            Decimal(p, s) => write!(f, "{}({},{})", RawPrestoTy::Decimal, p, s)?,
+            IpAddress => write!(f, "{}", RawPrestoTy::IpAddress)?,
+            Unknown => write!(f, "{}", RawPrestoTy::Unknown)?,
+        }
+        Ok(())
+    }
+}
+
+/// Represents the four different kind of integers that Presto/Trino supports
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PrestoInt {
     I8,
     I16,
@@ -206,27 +259,108 @@ pub enum PrestoInt {
     I64,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+/// Represents two different types of floats that Presto/Trino supports
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PrestoFloat {
     F32,
     F64,
 }
 
 impl PrestoTy {
-    pub fn from_type_signature(mut sig: TypeSignature) -> Result<Self, Error> {
+    #[deprecated(
+        since = "0.7.0",
+        note = "replaced with proper TryFrom trait implementation"
+    )]
+    #[inline(always)]
+    pub fn from_type_signature(sig: TypeSignature) -> Result<Self, Error> {
+        sig.try_into()
+    }
+
+    #[deprecated(
+        since = "0.7.0",
+        note = "replaced with proper TryFrom trait implementation"
+    )]
+    #[inline(always)]
+    pub fn from_column(column: Column) -> Result<(String, Self), Error> {
+        column.try_into()
+    }
+
+    #[deprecated(
+        since = "0.7.0",
+        note = "replaced with proper TryFrom trait implementation"
+    )]
+    #[inline(always)]
+    pub fn from_columns(columns: Vec<Column>) -> Result<Self, Error> {
+        columns.try_into()
+    }
+
+    #[deprecated(
+        since = "0.7.0",
+        note = "replaced with proper From trait implementation"
+    )]
+    #[inline(always)]
+    pub fn into_type_signature(self) -> TypeSignature {
+        self.into()
+    }
+
+    #[deprecated(
+        since = "0.7.0",
+        note = "replaced with proper fmt::Display trait implementation"
+    )]
+    pub fn full_type(&self) -> Cow<'static, str> {
+        self.to_string().into()
+    }
+
+    #[deprecated(
+        since = "0.7.0",
+        note = "replaced with proper From trait implementation"
+    )]
+    #[inline(always)]
+    pub fn raw_type(&self) -> RawPrestoTy {
+        self.clone().into()
+    }
+}
+
+impl TryFrom<Column> for (String, PrestoTy) {
+    type Error = Error;
+
+    fn try_from(value: Column) -> Result<Self, Self::Error> {
+        let name = value.name;
+        if let Some(sig) = value.type_signature {
+            let ty = sig.try_into()?;
+            Ok((name, ty))
+        } else {
+            Err(Error::InvalidColumn)
+        }
+    }
+}
+
+impl TryFrom<Vec<Column>> for PrestoTy {
+    type Error = Error;
+
+    fn try_from(value: Vec<Column>) -> Result<Self, Self::Error> {
+        let row = value.try_map(|col| col.try_into())?;
+        Ok(PrestoTy::Row(row))
+    }
+}
+
+impl TryFrom<TypeSignature> for PrestoTy {
+    type Error = Error;
+
+    fn try_from(mut value: TypeSignature) -> Result<Self, Self::Error> {
         use PrestoFloat::*;
         use PrestoInt::*;
 
-        let ty = match sig.raw_type {
+        let ty = match value.raw_type {
             RawPrestoTy::Date => PrestoTy::Date,
             RawPrestoTy::Time => PrestoTy::Time,
             RawPrestoTy::Timestamp => PrestoTy::Timestamp,
             RawPrestoTy::IntervalYearToMonth => PrestoTy::IntervalYearToMonth,
             RawPrestoTy::IntervalDayToSecond => PrestoTy::IntervalDayToSecond,
             RawPrestoTy::Unknown => PrestoTy::Unknown,
-            RawPrestoTy::Decimal if sig.arguments.len() == 2 => {
-                let s_sig = sig.arguments.pop().unwrap();
-                let p_sig = sig.arguments.pop().unwrap();
+            RawPrestoTy::Decimal if value.arguments.len() == 2 => {
+                let s_sig = value.arguments.pop().unwrap();
+                let p_sig = value.arguments.pop().unwrap();
                 if let (
                     ClientTypeSignatureParameter::LongLiteral(p),
                     ClientTypeSignatureParameter::LongLiteral(s),
@@ -245,42 +379,40 @@ impl PrestoTy {
             RawPrestoTy::Real => PrestoTy::PrestoFloat(F32),
             RawPrestoTy::Double => PrestoTy::PrestoFloat(F64),
             RawPrestoTy::VarChar => PrestoTy::Varchar,
-            RawPrestoTy::Char if sig.arguments.len() == 1 => {
-                if let ClientTypeSignatureParameter::LongLiteral(p) = sig.arguments.pop().unwrap() {
+            RawPrestoTy::Char if value.arguments.len() == 1 => {
+                if let ClientTypeSignatureParameter::LongLiteral(p) = value.arguments.pop().unwrap()
+                {
                     PrestoTy::Char(p as usize)
                 } else {
                     return Err(Error::InvalidTypeSignature);
                 }
             }
-            RawPrestoTy::Array if sig.arguments.len() == 1 => {
-                let sig = sig.arguments.pop().unwrap();
+            RawPrestoTy::Array if value.arguments.len() == 1 => {
+                let sig = value.arguments.pop().unwrap();
                 if let ClientTypeSignatureParameter::TypeSignature(sig) = sig {
-                    let inner = Self::from_type_signature(sig)?;
-                    PrestoTy::Array(Box::new(inner))
+                    PrestoTy::Array(Box::new(sig.try_into()?))
                 } else {
                     return Err(Error::InvalidTypeSignature);
                 }
             }
-            RawPrestoTy::Map if sig.arguments.len() == 2 => {
-                let v_sig = sig.arguments.pop().unwrap();
-                let k_sig = sig.arguments.pop().unwrap();
+            RawPrestoTy::Map if value.arguments.len() == 2 => {
+                let v_sig = value.arguments.pop().unwrap();
+                let k_sig = value.arguments.pop().unwrap();
                 if let (
                     ClientTypeSignatureParameter::TypeSignature(k_sig),
                     ClientTypeSignatureParameter::TypeSignature(v_sig),
                 ) = (k_sig, v_sig)
                 {
-                    let k_inner = Self::from_type_signature(k_sig)?;
-                    let v_inner = Self::from_type_signature(v_sig)?;
-                    PrestoTy::Map(Box::new(k_inner), Box::new(v_inner))
+                    PrestoTy::Map(Box::new(k_sig.try_into()?), Box::new(v_sig.try_into()?))
                 } else {
                     return Err(Error::InvalidTypeSignature);
                 }
             }
-            RawPrestoTy::Row if !sig.arguments.is_empty() => {
-                let ir = sig.arguments.try_map(|arg| match arg {
+            RawPrestoTy::Row if !value.arguments.is_empty() => {
+                let ir = value.arguments.try_map(|arg| match arg {
                     ClientTypeSignatureParameter::NamedTypeSignature(sig) => {
                         let name = sig.field_name.map(|n| n.name);
-                        let ty = Self::from_type_signature(sig.type_signature)?;
+                        let ty = sig.type_signature.try_into()?;
                         Ok((name, ty))
                     }
                     _ => Err(Error::InvalidTypeSignature),
@@ -309,28 +441,13 @@ impl PrestoTy {
 
         Ok(ty)
     }
+}
 
-    pub fn from_column(column: Column) -> Result<(String, Self), Error> {
-        let name = column.name;
-        if let Some(sig) = column.type_signature {
-            let ty = Self::from_type_signature(sig)?;
-            Ok((name, ty))
-        } else {
-            Err(Error::InvalidColumn)
-        }
-    }
-
-    pub fn from_columns(columns: Vec<Column>) -> Result<Self, Error> {
-        let row = columns.try_map(Self::from_column)?;
-        Ok(PrestoTy::Row(row))
-    }
-
-    pub fn into_type_signature(self) -> TypeSignature {
+impl From<PrestoTy> for TypeSignature {
+    fn from(value: PrestoTy) -> Self {
         use PrestoTy::*;
 
-        let raw_ty = self.raw_type();
-
-        let params = match self {
+        let params = match value.clone() {
             Unknown => vec![],
             Decimal(p, s) => vec![
                 ClientTypeSignatureParameter::LongLiteral(p as u64),
@@ -341,7 +458,7 @@ impl PrestoTy {
             Timestamp => vec![],
             IntervalYearToMonth => vec![],
             IntervalDayToSecond => vec![],
-            Option(t) => return t.into_type_signature(),
+            Option(ty) => return (*ty).into(),
             Boolean => vec![],
             PrestoInt(_) => vec![],
             PrestoFloat(_) => vec![],
@@ -350,117 +467,88 @@ impl PrestoTy {
             Tuple(ts) => ts.map(|ty| {
                 ClientTypeSignatureParameter::NamedTypeSignature(NamedTypeSignature {
                     field_name: None,
-                    type_signature: ty.into_type_signature(),
+                    type_signature: ty.into(),
                 })
             }),
             Row(ts) => ts.map(|(name, ty)| {
                 ClientTypeSignatureParameter::NamedTypeSignature(NamedTypeSignature {
                     field_name: Some(RowFieldName::new(name)),
-                    type_signature: ty.into_type_signature(),
+                    type_signature: ty.into(),
                 })
             }),
-            Array(t) => vec![ClientTypeSignatureParameter::TypeSignature(
-                t.into_type_signature(),
+            Array(ty) => vec![ClientTypeSignatureParameter::TypeSignature(
+                (*ty).into(),
             )],
-            Map(t1, t2) => vec![
-                ClientTypeSignatureParameter::TypeSignature(t1.into_type_signature()),
-                ClientTypeSignatureParameter::TypeSignature(t2.into_type_signature()),
+            Map(ty1, ty2) => vec![
+                ClientTypeSignatureParameter::TypeSignature((*ty1).into()),
+                ClientTypeSignatureParameter::TypeSignature((*ty2).into()),
             ],
             IpAddress => vec![],
             Uuid => vec![],
         };
 
-        TypeSignature::new(raw_ty, params)
+        TypeSignature::new(value.into(), params)
     }
+}
 
-    pub fn full_type(&self) -> Cow<'static, str> {
-        use PrestoTy::*;
-
-        match self {
-            Unknown => RawPrestoTy::Unknown.to_str().into(),
-            Decimal(p, s) => format!("{}({},{})", RawPrestoTy::Decimal.to_str(), p, s).into(),
-            Option(t) => t.full_type(),
-            Date => RawPrestoTy::Date.to_str().into(),
-            Time => RawPrestoTy::Time.to_str().into(),
-            Timestamp => RawPrestoTy::Timestamp.to_str().into(),
-            IntervalYearToMonth => RawPrestoTy::IntervalYearToMonth.to_str().into(),
-            IntervalDayToSecond => RawPrestoTy::IntervalDayToSecond.to_str().into(),
-            Boolean => RawPrestoTy::Boolean.to_str().into(),
-            PrestoInt(ty) => ty.raw_type().to_str().into(),
-            PrestoFloat(ty) => ty.raw_type().to_str().into(),
-            Varchar => RawPrestoTy::VarChar.to_str().into(),
-            Char(a) => format!("{}({})", RawPrestoTy::Char.to_str(), a).into(),
-            Tuple(ts) => format!(
-                "{}({})",
-                RawPrestoTy::Row.to_str(),
-                ts.lazy_map(|ty| ty.full_type()).join(",")
-            )
-            .into(),
-            Row(ts) => format!(
-                "{}({})",
-                RawPrestoTy::Row.to_str(),
-                ts.lazy_map(|(name, ty)| format!("{} {}", name, ty.full_type()))
-                    .join(",")
-            )
-            .into(),
-            Array(t) => format!("{}({})", RawPrestoTy::Array.to_str(), t.full_type()).into(),
-            Map(t1, t2) => format!(
-                "{}({},{})",
-                RawPrestoTy::Map.to_str(),
-                t1.full_type(),
-                t2.full_type()
-            )
-            .into(),
-            IpAddress => RawPrestoTy::IpAddress.to_str().into(),
-            Uuid => RawPrestoTy::Uuid.to_str().into(),
+impl From<PrestoTy> for RawPrestoTy {
+    fn from(value: PrestoTy) -> RawPrestoTy {
+        match value {
+            PrestoTy::Unknown => RawPrestoTy::Unknown,
+            PrestoTy::Date => RawPrestoTy::Date,
+            PrestoTy::Time => RawPrestoTy::Time,
+            PrestoTy::Timestamp => RawPrestoTy::Timestamp,
+            PrestoTy::IntervalYearToMonth => RawPrestoTy::IntervalYearToMonth,
+            PrestoTy::IntervalDayToSecond => RawPrestoTy::IntervalDayToSecond,
+            PrestoTy::Decimal(_, _) => RawPrestoTy::Decimal,
+            PrestoTy::Option(ty) => (*ty).into(),
+            PrestoTy::Boolean => RawPrestoTy::Boolean,
+            PrestoTy::PrestoInt(ty) => ty.into(),
+            PrestoTy::PrestoFloat(ty) => ty.into(),
+            PrestoTy::Varchar => RawPrestoTy::VarChar,
+            PrestoTy::Char(_) => RawPrestoTy::Char,
+            PrestoTy::Tuple(_) => RawPrestoTy::Row,
+            PrestoTy::Row(_) => RawPrestoTy::Row,
+            PrestoTy::Array(_) => RawPrestoTy::Array,
+            PrestoTy::Map(_, _) => RawPrestoTy::Map,
+            PrestoTy::IpAddress => RawPrestoTy::IpAddress,
+            PrestoTy::Uuid => RawPrestoTy::Uuid,
         }
     }
+}
 
-    pub fn raw_type(&self) -> RawPrestoTy {
-        use PrestoTy::*;
-
-        match self {
-            Unknown => RawPrestoTy::Unknown,
-            Date => RawPrestoTy::Date,
-            Time => RawPrestoTy::Time,
-            Timestamp => RawPrestoTy::Timestamp,
-            IntervalYearToMonth => RawPrestoTy::IntervalYearToMonth,
-            IntervalDayToSecond => RawPrestoTy::IntervalDayToSecond,
-            Decimal(_, _) => RawPrestoTy::Decimal,
-            Option(ty) => ty.raw_type(),
-            Boolean => RawPrestoTy::Boolean,
-            PrestoInt(ty) => ty.raw_type(),
-            PrestoFloat(ty) => ty.raw_type(),
-            Varchar => RawPrestoTy::VarChar,
-            Char(_) => RawPrestoTy::Char,
-            Tuple(_) => RawPrestoTy::Row,
-            Row(_) => RawPrestoTy::Row,
-            Array(_) => RawPrestoTy::Array,
-            Map(_, _) => RawPrestoTy::Map,
-            IpAddress => RawPrestoTy::IpAddress,
-            Uuid => RawPrestoTy::Uuid,
+impl From<PrestoInt> for RawPrestoTy {
+    fn from(value: PrestoInt) -> Self {
+        match value {
+            PrestoInt::I8 => RawPrestoTy::TinyInt,
+            PrestoInt::I16 => RawPrestoTy::SmallInt,
+            PrestoInt::I32 => RawPrestoTy::Integer,
+            PrestoInt::I64 => RawPrestoTy::BigInt,
         }
     }
 }
 
 impl PrestoInt {
+    #[deprecated(since = "0.7.0", note = "replaced with From trait implementation")]
+    #[inline(always)]
     pub fn raw_type(&self) -> RawPrestoTy {
-        use PrestoInt::*;
-        match self {
-            I8 => RawPrestoTy::TinyInt,
-            I16 => RawPrestoTy::SmallInt,
-            I32 => RawPrestoTy::Integer,
-            I64 => RawPrestoTy::BigInt,
+        (*self).into()
+    }
+}
+
+impl From<PrestoFloat> for RawPrestoTy {
+    fn from(value: PrestoFloat) -> Self {
+        match value {
+            PrestoFloat::F32 => RawPrestoTy::Real,
+            PrestoFloat::F64 => RawPrestoTy::Double,
         }
     }
 }
 
 impl PrestoFloat {
+    #[deprecated(since = "0.7.0", note = "replaced with From trait implementation")]
+    #[inline(always)]
     pub fn raw_type(&self) -> RawPrestoTy {
-        use PrestoFloat::*;
-        match self {
-            F32 => RawPrestoTy::Real,
-            F64 => RawPrestoTy::Double,
-        }
+        (*self).into()
     }
 }

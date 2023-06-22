@@ -1,7 +1,12 @@
+use std::fmt;
+use std::str::FromStr;
+
 use lazy_static::lazy_static;
 use regex::Regex;
+use strum::{Display, EnumString, IntoStaticStr};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, EnumString, Display, IntoStaticStr)]
+#[strum(serialize_all = "UPPERCASE")]
 pub enum RoleType {
     Role,
     All,
@@ -22,39 +27,30 @@ impl SelectedRole {
     pub fn new(ty: RoleType, role: Option<String>) -> Self {
         SelectedRole { ty, role }
     }
+}
 
-    pub fn from_str(s: &str) -> Option<Self> {
-        let cap = PATTERN.captures(s)?;
-        let ty = match cap.get(1).unwrap().as_str() {
-            "ROLE" => RoleType::Role,
-            "ALL" => RoleType::All,
-            "NONE" => RoleType::None,
-            _ => unreachable!(),
+impl FromStr for SelectedRole {
+    type Err = crate::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let cap = PATTERN.captures(s).ok_or(crate::Error::ParseRoleFailed)?;
+        let ty: RoleType = match cap.get(1).unwrap().as_str().try_into() {
+            Ok(val) => val,
+            Err(_) => unreachable!(),
         };
         let role = cap.get(3).map(|m| m.as_str().to_string());
-        Some(Self::new(ty, role))
+        Ok(Self::new(ty, role))
     }
 }
 
-impl ToString for RoleType {
-    fn to_string(&self) -> String {
-        use RoleType::*;
-        match self {
-            Role => "ROLE".to_string(),
-            All => "ALL".to_string(),
-            None => "NONE".to_string(),
-        }
-    }
-}
-
-impl ToString for SelectedRole {
-    fn to_string(&self) -> String {
-        let ty = self.ty.to_string();
+impl fmt::Display for SelectedRole {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let ty = &self.ty;
+        write!(f, "{}", ty)?;
         if let Some(role) = &self.role {
-            format!("{}{{{}}}", ty, role)
-        } else {
-            ty
+            write!(f, "{{{}}}", role)?;
         }
+        Ok(())
     }
 }
 

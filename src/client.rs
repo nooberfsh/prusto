@@ -6,6 +6,7 @@ use iterable::*;
 use log::*;
 use reqwest::header::HeaderValue;
 use reqwest::{RequestBuilder, Response, Url};
+use std::str::FromStr;
 use tokio::sync::RwLock;
 use tokio::time::{sleep, Duration};
 
@@ -15,7 +16,6 @@ use crate::error::{Error, Result};
 use crate::header::*;
 #[cfg(feature = "presto")]
 use crate::presto_header::*;
-use crate::selected_role::SelectedRole;
 use crate::session::{Session, SessionBuilder};
 use crate::ssl::Ssl;
 use crate::transaction::TransactionId;
@@ -275,7 +275,7 @@ fn add_session_header(mut builder: RequestBuilder, session: &Session) -> Request
         HEADER_PREPARED_STATEMENT,
         &session.prepared_statements,
     );
-    builder = builder.header(HEADER_TRANSACTION, session.transaction_id.to_str());
+    builder = builder.header(HEADER_TRANSACTION, session.transaction_id.to_string());
     builder = builder.header(HEADER_CLIENT_CAPABILITIES, "PATH,PARAMETRIC_DATETIME");
     builder
 }
@@ -315,16 +315,16 @@ macro_rules! retry {
 
 macro_rules! set_header {
     ($session:expr, $header:expr, $resp:expr) => {
-        set_header!($session, $header, $resp, |x: &str| Some(Some(
+        set_header!($session, $header, $resp, |x: &str| Result::Ok(Some(
             x.to_string()
         )));
     };
 
     ($session:expr, $header:expr, $resp:expr, $from_str:expr) => {
         if let Some(v) = $resp.headers().get($header) {
-            match v.to_str() {
+        match v.to_str() {
                 Ok(s) => {
-                    if let Some(s) = $from_str(s) {
+                    if let Ok(s) = $from_str(s) {
                         $session = s;
                     }
                 }
@@ -334,42 +334,33 @@ macro_rules! set_header {
     };
 }
 
-macro_rules! clear_header {
-    ($session:expr, $header:expr, $resp:expr) => {
-        if let Some(_) = $resp.headers().get($header) {
-            $session = Default::default();
-        }
-    };
+fn clear_header<T: Default>(session: &mut T, header: &str, resp: &Response) {
+    if resp.headers().get(header).is_some() {
+        *session = Default::default();
+    }
 }
 
-macro_rules! set_header_map {
-    ($session:expr, $header:expr, $resp:expr) => {
-        set_header_map!($session, $header, $resp, |x: &str| Some(x.to_string()));
-    };
-    ($session:expr, $header:expr, $resp:expr, $from_str:expr) => {
-        for v in $resp.headers().get_all($header) {
-            if let Some((k, v)) = decode_kv_from_header(v) {
-                if let Some(v) = $from_str(&v) {
-                    $session.insert(k, v);
-                }
-            } else {
-                warn!("decode '{:?}' failed", v)
+fn set_header_map<T: FromStr>(session: &mut HashMap<String, T>, header: &str, resp: &Response) {
+    for v in resp.headers().get_all(header) {
+        if let Some((k, v)) = decode_kv_from_header(v) {
+            if let Ok(v) = T::from_str(&v) {
+                session.insert(k, v);
             }
+        } else {
+            warn!("decode '{:?}' failed", v)
         }
-    };
+    }
 }
 
-macro_rules! clear_header_map {
-    ($session:expr, $header:expr, $resp:expr) => {
-        for v in $resp.headers().get_all($header) {
-            match v.to_str() {
-                Ok(s) => {
-                    $session.remove(s);
-                }
-                Err(e) => warn!("parse header {} failed, reason: {}", $header, e),
+fn clear_header_map<T: FromStr>(session: &mut HashMap<String, T>, header: &str, resp: &Response) {
+    for v in resp.headers().get_all(header) {
+        match v.to_str() {
+            Ok(s) => {
+                session.remove(s);
             }
+            Err(e) => warn!("parse header {} failed, reason: {}", header, e),
         }
-    };
+    }
 }
 
 fn need_retry(e: &Error) -> bool {
@@ -471,16 +462,16 @@ impl Client {
         set_header!(session.schema, HEADER_SET_SCHEMA, resp);
         set_header!(session.path, HEADER_SET_PATH, resp);
 
-        set_header_map!(session.properties, HEADER_SET_SESSION, resp);
-        clear_header_map!(session.properties, HEADER_CLEAR_SESSION, resp);
+        set_header_map(&mut session.properties, HEADER_SET_SESSION, resp);
+        clear_header_map(&mut session.properties, HEADER_CLEAR_SESSION, resp);
 
-        set_header_map!(session.roles, HEADER_SET_ROLE, resp, SelectedRole::from_str);
+        set_header_map(&mut session.roles, HEADER_SET_ROLE, resp);
 
-        set_header_map!(session.prepared_statements, HEADER_ADDED_PREPARE, resp);
-        clear_header_map!(
-            session.prepared_statements,
+        set_header_map(&mut session.prepared_statements, HEADER_ADDED_PREPARE, resp);
+        clear_header_map(
+            &mut session.prepared_statements,
             HEADER_DEALLOCATED_PREPARE,
-            resp
+            resp,
         );
 
         set_header!(
@@ -489,7 +480,11 @@ impl Client {
             resp,
             TransactionId::from_str
         );
-        clear_header!(session.transaction_id, HEADER_CLEAR_TRANSACTION_ID, resp);
+        clear_header(
+            &mut session.transaction_id,
+            HEADER_CLEAR_TRANSACTION_ID,
+            resp,
+        )
     }
 }
 
