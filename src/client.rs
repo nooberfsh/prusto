@@ -98,7 +98,7 @@ impl ClientBuilder {
     }
 
     pub fn schema(mut self, s: impl ToString) -> Self {
-        self.session.catalog = Some(s.to_string());
+        self.session.schema = Some(s.to_string());
         self
     }
 
@@ -423,7 +423,7 @@ impl Client {
         retry!(self, get_next, url, self.max_attempt)
     }
 
-    async fn get<T: Presto + 'static>(&self, sql: String) -> Result<QueryResult<T>> {
+    pub async fn get<T: Presto + 'static>(&self, sql: String) -> Result<QueryResult<T>> {
         let req = self.client.post(self.url.clone()).body(sql);
         let req = {
             let session = self.session.read().await;
@@ -441,7 +441,7 @@ impl Client {
         self.send(req).await
     }
 
-    async fn get_next<T: Presto + 'static>(&self, url: &str) -> Result<QueryResult<T>> {
+    pub async fn get_next<T: Presto + 'static>(&self, url: &str) -> Result<QueryResult<T>> {
         let req = self.client.get(url);
         let req = {
             let session = self.session.read().await;
