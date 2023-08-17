@@ -53,7 +53,7 @@ impl<T: Presto> DataSet<T> {
         self.data.as_slice()
     }
 
-    pub(crate) fn merge(&mut self, other: DataSet<T>) {
+    pub fn merge(&mut self, other: DataSet<T>) {
         self.data.extend(other.data)
     }
 }
