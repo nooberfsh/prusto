@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://book.async.rs/overview
 
 ## [Unreleased]
 
+## [0.5.1] - 2023-10-19
+- Make Client::get and some functions public [#29](https://github.com/nooberfsh/prusto/pull/29)
+
+## [0.5.0] - 2023-02-27
+- v0.5.0 can be used with stable rust.
+- Add SSL root certificate support [#22](https://github.com/nooberfsh/prusto/pull/22)
+- Provide a feature flag for running as presto client [#19](https://github.com/nooberfsh/prusto/pull/19)
+
 ## [0.4.0] - 2022-02-07
 - Use `Rust 2021`
 
@@ -30,7 +38,9 @@ and this project adheres to [Semantic Versioning](https://book.async.rs/overview
 ## [0.1.0] - 2020-10-01
 - Initial release
 
-[Unreleased]: https://github.com/nooberfsh/prusto/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/nooberfsh/prusto/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/nooberfsh/prusto/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/nooberfsh/prusto/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/nooberfsh/prusto/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/nooberfsh/prusto/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/nooberfsh/prusto/compare/v0.1.2...v0.2.0
