@@ -39,6 +39,7 @@ pub struct ClientBuilder {
     auth: Option<Auth>,
     max_attempt: usize,
     ssl: Option<Ssl>,
+    no_verify: bool,
 }
 
 #[derive(Debug)]
@@ -54,6 +55,7 @@ impl ClientBuilder {
             auth: None,
             max_attempt: 3,
             ssl: None,
+            no_verify: false,
         }
     }
 
@@ -64,6 +66,11 @@ impl ClientBuilder {
 
     pub fn secure(mut self, s: bool) -> Self {
         self.session.secure = s;
+        self
+    }
+
+    pub fn no_verify(mut self, nv: bool) -> Self {
+        self.no_verify = nv;
         self
     }
 
@@ -195,6 +202,10 @@ impl ClientBuilder {
 
         let mut client_builder =
             reqwest::ClientBuilder::new().timeout(session.client_request_timeout);
+
+        if self.no_verify {
+            client_builder = client_builder.danger_accept_invalid_certs(true);
+        }
 
         if let Some(ssl) = &self.ssl {
             if let Some(root) = &ssl.root_cert {
