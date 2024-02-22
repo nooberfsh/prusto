@@ -120,6 +120,21 @@
                     }
                 ]
             }
+        },
+        {
+            "name": "f",
+            "type": "varchar(3)",
+            "typeSignature": {
+                "rawType": "varchar",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": [
+                    {
+                        "kind": "LONG",
+                        "value": 3
+                    }
+                ]
+            }
         }
     ],
     "stats": {
