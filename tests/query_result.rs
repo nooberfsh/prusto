@@ -20,6 +20,7 @@ struct A {
     c: bool,
     d: Vec<i32>,
     e: B,
+    f: Option<String>,
 }
 
 #[derive(Presto, PartialEq, Debug, Clone)]
