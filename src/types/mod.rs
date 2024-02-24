@@ -24,7 +24,6 @@ pub use decimal::*;
 pub use fixed_char::*;
 pub use float::*;
 pub use integer::*;
-pub use integer::*;
 pub use interval_day_to_second::*;
 pub use interval_year_to_month::*;
 pub use ip_address::*;

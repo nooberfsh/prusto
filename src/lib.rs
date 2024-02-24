@@ -14,6 +14,7 @@ pub mod selected_role;
 pub mod session;
 pub mod ssl;
 pub mod transaction;
+pub mod tuples;
 pub mod types;
 
 pub use client::*;
