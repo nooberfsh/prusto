@@ -23,6 +23,8 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
         Fields::Unit => return Err(Error::new(data.span(), "field can not be unit")),
     };
 
+    let tuplety = Ident::new(&format!("Tuple{}", fields.len()), Span::call_site());
+
     let keys = fields.iter().map(|f| f.ident.as_ref().unwrap());
     let keys_lit = keys
         .clone()
@@ -47,11 +49,11 @@ fn derive_impl(data: ItemStruct) -> Result<TokenStream> {
     let impl_trait_block = quote! {
 
         impl #impl_generics ::prusto::types::Presto for #name #ty_generics #where_clause {
-            type ValueType<'_a> where #(#types: '_a ,)* = ( #(<#types1 as ::prusto::types::Presto>::ValueType<'_a>, )* );
+            type ValueType<'_a> where #(#types: '_a ,)* = ::prusto::tuples::#tuplety< #(<#types1 as ::prusto::types::Presto>::ValueType<'_a>, )* >;
             type Seed<'_a, '_de> = #seed_name #seed_ty_generics;
 
             fn value(&self) -> Self::ValueType<'_>  {
-                ( #(self.#keys.value(), )* )
+                ::prusto::tuples::#tuplety( #(self.#keys.value(), )* )
             }
 
             fn ty() -> ::prusto::types::PrestoTy {
