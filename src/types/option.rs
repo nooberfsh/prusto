@@ -3,6 +3,8 @@ use std::marker::PhantomData;
 
 use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
 
+use crate::RawPrestoTy;
+
 use super::{Context, Presto, PrestoTy};
 
 impl<T: Presto> Presto for Option<T> {
@@ -44,7 +46,7 @@ impl<'a, T> OptionSeed<'a, T> {
 impl<'a, 'de, T: Presto> Visitor<'de> for OptionSeed<'a, T> {
     type Value = Option<T>;
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str(T::ty().raw_type().to_str())
+        formatter.write_str(RawPrestoTy::from(T::ty()).into())
     }
 
     fn visit_none<E>(self) -> Result<Self::Value, E>

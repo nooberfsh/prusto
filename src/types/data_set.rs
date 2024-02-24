@@ -88,8 +88,8 @@ impl<T: Presto> Serialize for DataSet<T> {
 
         let columns = self.types.clone().map(|(name, ty)| Column {
             name,
-            ty: ty.full_type().into_owned(),
-            type_signature: Some(ty.into_type_signature()),
+            ty: ty.to_string(),
+            type_signature: Some(ty.into()),
         });
 
         let data = SerializeIterator {
@@ -133,7 +133,7 @@ impl<'de, T: Presto> Deserialize<'de> for DataSet<T> {
             {
                 let types = if let Some(Field::Columns) = map.next_key()? {
                     let columns: Vec<Column> = map.next_value()?;
-                    columns.try_map(PrestoTy::from_column).map_err(|e| {
+                    columns.try_map(|col| col.try_into()).map_err(|e| {
                         de::Error::custom(format!("deserialize presto type failed, reason: {}", e))
                     })?
                 } else {
