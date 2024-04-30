@@ -1,4 +1,5 @@
 use std::fmt;
+use chrono::{DateTime, Utc};
 
 use chrono::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
@@ -6,7 +7,7 @@ use serde::de::{self, DeserializeSeed, Deserializer, Visitor};
 use super::{Context, Presto, PrestoTy};
 
 macro_rules! gen_date_time {
-    ($ty:ty, $seed:ident, $pty:expr, $format:expr, $empty:expr, $expect:expr) => {
+    ($ty:ty, $parse:expr, $seed:ident, $pty:expr, $format:expr, $empty:expr, $expect:expr, $tzmap:expr) => {
         impl Presto for $ty {
             type ValueType<'a> = String;
             type Seed<'a, 'de> = $seed;
@@ -41,9 +42,9 @@ macro_rules! gen_date_time {
             where
                 E: de::Error,
             {
-                <$ty>::parse_from_str(v, $format).map_err(|e| {
+                $parse(v, $format).map_err(|e| {
                     de::Error::custom(format!("deserialize {} failed, reason: {}", $expect, e))
-                })
+                }).map($tzmap)
             }
         }
 
@@ -61,14 +62,17 @@ macro_rules! gen_date_time {
 
 gen_date_time!(
     NaiveDate,
+    NaiveDate::parse_from_str,
     NaiveDateSeed,
     PrestoTy::Date,
     "%Y-%m-%d",
     NaiveDate::from_ymd_opt(1970, 1, 1).unwrap(),
-    "naive date"
+    "naive date",
+    |t| t
 );
 gen_date_time!(
     NaiveDateTime,
+    NaiveDateTime::parse_from_str,
     NaiveDateTimeSeed,
     PrestoTy::Timestamp,
     "%Y-%m-%d %H:%M:%S%.3f",
@@ -76,13 +80,26 @@ gen_date_time!(
         .unwrap()
         .and_hms_opt(0, 0, 0)
         .unwrap(),
-    "naive time"
+    "naive time",
+    |t| t
 );
 gen_date_time!(
     NaiveTime,
+    NaiveTime::parse_from_str,
     NaiveTimeSeed,
     PrestoTy::Time,
     "%H:%M:%S%.3f",
     NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-    "naive date time"
+    "naive date time",
+    |t| t
+);
+gen_date_time!(
+    DateTime<Utc>,
+    NaiveDateTime::parse_from_str,
+    TimestampWithTimeZoneSeed,
+    PrestoTy::TimestampWithTimeZone,
+    "%Y-%m-%d %H:%M:%S%.3f %Z",
+    DateTime::default(),
+    "date time with time zone",
+    |t| t.and_utc()
 );

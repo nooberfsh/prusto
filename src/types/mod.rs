@@ -50,6 +50,7 @@ use crate::{
     ClientTypeSignatureParameter, Column, NamedTypeSignature, RawPrestoTy, RowFieldName,
     TypeSignature,
 };
+use crate::PrestoTy::{TimestampWithTimeZone, TimeWithTimeZone};
 
 //TODO: refine it
 #[derive(Display, Debug)]
@@ -125,8 +126,10 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
         (Option(ty), provided) => extract(ty, provided),
         (Boolean, Boolean) => Ok(vec![]),
         (Date, Date) => Ok(vec![]),
-        (Time, Time) => Ok(vec![]),
-        (Timestamp, Timestamp) => Ok(vec![]),
+        (Time, Time | TimeWithPrecision(_)) => Ok(vec![]),
+        (TimeWithTimeZone, TimeWithTimeZone) => {Ok(vec![])},
+        (Timestamp, Timestamp | TimestampWithPrecision(_)) => Ok(vec![]),
+        (TimestampWithTimeZone, TimestampWithTimeZone | TimestampWithTimeZoneWithPrecision(_)) => Ok(vec![]),
         (IntervalYearToMonth, IntervalYearToMonth) => Ok(vec![]),
         (IntervalDayToSecond, IntervalDayToSecond) => Ok(vec![]),
         (PrestoInt(_), PrestoInt(_)) => Ok(vec![]),
@@ -171,14 +174,18 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
 
 // TODO:
 // VarBinary Json
-// TimestampWithTimeZone TimeWithTimeZone
 // HyperLogLog P4HyperLogLog
 // QDigest
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PrestoTy {
     Date,
     Time,
+    TimeWithPrecision(usize),
+    TimeWithTimeZone,
     Timestamp,
+    TimestampWithPrecision(usize),
+    TimestampWithTimeZone,
+    TimestampWithTimeZoneWithPrecision(usize),
     Uuid,
     IntervalYearToMonth,
     IntervalDayToSecond,
@@ -301,8 +308,24 @@ impl PrestoTy {
                     PrestoTy::Tuple(tuple)
                 }
             }
-            RawPrestoTy::IpAddress => PrestoTy::IpAddress,
-            RawPrestoTy::Uuid => PrestoTy::Uuid,
+            RawPrestoTy::TimestampWithTimeZone => {
+                match sig.arguments.as_slice() {
+                    [] => PrestoTy::TimestampWithTimeZone,
+                    [ClientTypeSignatureParameter::LongLiteral(s)] => {
+                        PrestoTy::TimestampWithTimeZoneWithPrecision(*s as usize)
+                    }
+                    _ => return Err(Error::InvalidTypeSignature),
+                }
+            }
+            RawPrestoTy::TimeWithTimeZone if sig.arguments.len() == 1 => {
+                match sig.arguments.as_slice() {
+                    [] => PrestoTy::TimeWithTimeZone,
+                    [ClientTypeSignatureParameter::LongLiteral(s)] => {
+                        PrestoTy::TimeWithPrecision(*s as usize)
+                    }
+                    _ => return Err(Error::InvalidTypeSignature),
+                }
+            }
             _ => return Err(Error::InvalidTypeSignature),
         };
 
@@ -337,7 +360,12 @@ impl PrestoTy {
             ],
             Date => vec![],
             Time => vec![],
+            TimeWithTimeZone => vec![],
+            TimeWithPrecision(s) => vec![ClientTypeSignatureParameter::LongLiteral(s as u64)],
             Timestamp => vec![],
+            TimestampWithPrecision(s) => vec![ClientTypeSignatureParameter::LongLiteral(s as u64)],
+            TimestampWithTimeZone => vec![],
+            TimestampWithTimeZoneWithPrecision(s) => vec![ClientTypeSignatureParameter::LongLiteral(s as u64)],
             IntervalYearToMonth => vec![],
             IntervalDayToSecond => vec![],
             Option(t) => return t.into_type_signature(),
@@ -381,7 +409,24 @@ impl PrestoTy {
             Option(t) => t.full_type(),
             Date => RawPrestoTy::Date.to_str().into(),
             Time => RawPrestoTy::Time.to_str().into(),
+            TimeWithPrecision(p) => format!(
+                "{}({})",
+                RawPrestoTy::Time.to_str(),
+                p.to_string()
+            ).into(),
+            TimestampWithPrecision(p) => format!(
+                "{}({})",
+                RawPrestoTy::Timestamp.to_str(),
+                p.to_string()
+            ).into(),
+            TimestampWithTimeZoneWithPrecision(p) => format!(
+                "{}({})",
+                RawPrestoTy::TimestampWithTimeZone.to_str(),
+                p.to_string()
+            ).into(),
+            TimeWithTimeZone => RawPrestoTy::TimeWithTimeZone.to_str().into(),
             Timestamp => RawPrestoTy::Timestamp.to_str().into(),
+            TimestampWithTimeZone => RawPrestoTy::TimestampWithTimeZone.to_str().into(),
             IntervalYearToMonth => RawPrestoTy::IntervalYearToMonth.to_str().into(),
             IntervalDayToSecond => RawPrestoTy::IntervalDayToSecond.to_str().into(),
             Boolean => RawPrestoTy::Boolean.to_str().into(),
@@ -421,8 +466,10 @@ impl PrestoTy {
         match self {
             Unknown => RawPrestoTy::Unknown,
             Date => RawPrestoTy::Date,
-            Time => RawPrestoTy::Time,
-            Timestamp => RawPrestoTy::Timestamp,
+            Time | TimeWithPrecision(_) => RawPrestoTy::Time,
+            TimeWithTimeZone => RawPrestoTy::TimeWithTimeZone,
+            Timestamp | TimestampWithPrecision(_) => RawPrestoTy::Timestamp,
+            TimestampWithTimeZone | TimestampWithTimeZoneWithPrecision(_) => RawPrestoTy::TimestampWithTimeZone,
             IntervalYearToMonth => RawPrestoTy::IntervalYearToMonth,
             IntervalDayToSecond => RawPrestoTy::IntervalDayToSecond,
             Decimal(_, _) => RawPrestoTy::Decimal,
