@@ -154,6 +154,10 @@ mod tests {
         let ty = RawPrestoTy::Char;
         let s = serde_json::to_string(&ty).unwrap();
         assert_eq!(s, "\"char\"");
+
+        let ty = RawPrestoTy::Json;
+        let s = serde_json::to_string(&ty).unwrap();
+        assert_eq!(s, "\"json\"");
     }
 
     #[test]
@@ -161,6 +165,10 @@ mod tests {
         let data = "\"char\"";
         let ty = serde_json::from_str::<RawPrestoTy>(data).unwrap();
         assert_eq!(ty, RawPrestoTy::Char);
+
+        let data = "\"json\"";
+        let ty = serde_json::from_str::<RawPrestoTy>(data).unwrap();
+        assert_eq!(ty, RawPrestoTy::Json);
 
         let invalid = "\"xxx\"";
         let res = serde_json::from_str::<RawPrestoTy>(invalid);

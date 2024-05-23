@@ -8,6 +8,7 @@ mod integer;
 mod interval_day_to_second;
 mod interval_year_to_month;
 mod ip_address;
+pub mod json;
 mod map;
 mod option;
 mod row;
@@ -43,9 +44,10 @@ use std::sync::Arc;
 
 use derive_more::Display;
 use iterable::*;
-use serde::de::DeserializeSeed;
+use serde::de::{DeserializeSeed, IntoDeserializer};
 use serde::Serialize;
 
+use crate::PrestoTy::Uuid;
 use crate::{
     ClientTypeSignatureParameter, Column, NamedTypeSignature, RawPrestoTy, RowFieldName,
     TypeSignature,
@@ -165,6 +167,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
         (Map(t1k, t1v), Map(t2k, t2v)) => Ok(extract(t1k, t2k)?.chain(extract(t1v, t2v)?)),
         (IpAddress, IpAddress) => Ok(vec![]),
         (Uuid, Uuid) => Ok(vec![]),
+        (Json, Json) => Ok(vec![]),
         _ => Err(Error::InvalidPrestoType),
     }
 }
@@ -194,6 +197,7 @@ pub enum PrestoTy {
     Map(Box<PrestoTy>, Box<PrestoTy>),
     Decimal(usize, usize),
     IpAddress,
+    Json,
     Unknown,
 }
 
@@ -303,6 +307,7 @@ impl PrestoTy {
             }
             RawPrestoTy::IpAddress => PrestoTy::IpAddress,
             RawPrestoTy::Uuid => PrestoTy::Uuid,
+            RawPrestoTy::Json => PrestoTy::Json,
             _ => return Err(Error::InvalidTypeSignature),
         };
 
@@ -367,6 +372,7 @@ impl PrestoTy {
             ],
             IpAddress => vec![],
             Uuid => vec![],
+            Json => vec![],
         };
 
         TypeSignature::new(raw_ty, params)
@@ -412,6 +418,7 @@ impl PrestoTy {
             .into(),
             IpAddress => RawPrestoTy::IpAddress.to_str().into(),
             Uuid => RawPrestoTy::Uuid.to_str().into(),
+            Json => RawPrestoTy::Json.to_str().into(),
         }
     }
 
@@ -438,6 +445,7 @@ impl PrestoTy {
             Map(_, _) => RawPrestoTy::Map,
             IpAddress => RawPrestoTy::IpAddress,
             Uuid => RawPrestoTy::Uuid,
+            Json => RawPrestoTy::Json,
         }
     }
 }

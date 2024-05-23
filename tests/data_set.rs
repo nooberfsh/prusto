@@ -52,6 +52,19 @@ fn split(v: Value) -> Option<(Vec<Column>, Value)> {
 }
 
 #[test]
+fn test_json() {
+    let (s, v) = read("json");
+    let d = serde_json::from_str::<DataSet<Row>>(&s).unwrap();
+    assert_ds(d.clone(), v);
+    let d = d.into_vec();
+    assert_eq!(d.len(), 1);
+    assert_eq!(
+        d[0].clone().into_json(),
+        vec![Value::String("abc".to_string())]
+    );
+}
+
+#[test]
 fn test_char() {
     #[derive(Presto, Eq, PartialEq, Debug, Clone)]
     struct A {
