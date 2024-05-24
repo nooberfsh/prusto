@@ -8,12 +8,13 @@ mod integer;
 mod interval_day_to_second;
 mod interval_year_to_month;
 mod ip_address;
+pub mod json;
 mod map;
 mod option;
 mod row;
 mod seq;
 mod string;
-pub(self) mod util;
+mod util;
 pub mod uuid;
 
 pub use self::uuid::*;
@@ -41,15 +42,14 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::sync::Arc;
 
-use derive_more::Display;
-use iterable::*;
-use serde::de::DeserializeSeed;
-use serde::Serialize;
-
 use crate::{
     ClientTypeSignatureParameter, Column, NamedTypeSignature, RawPrestoTy, RowFieldName,
     TypeSignature,
 };
+use derive_more::Display;
+use iterable::*;
+use serde::de::DeserializeSeed;
+use serde::Serialize;
 
 //TODO: refine it
 #[derive(Display, Debug)]
@@ -92,7 +92,7 @@ impl<'a> Context<'a> {
     pub fn new<T: Presto>(provided: &'a PrestoTy) -> Result<Self, Error> {
         let target = T::ty();
         let ret = extract(&target, provided)?;
-        let map = HashMap::from_iter(ret.into_iter());
+        let map = HashMap::from_iter(ret);
         Ok(Context {
             ty: provided,
             map: Arc::new(map),
@@ -165,6 +165,7 @@ fn extract(target: &PrestoTy, provided: &PrestoTy) -> Result<Vec<(usize, Vec<usi
         (Map(t1k, t1v), Map(t2k, t2v)) => Ok(extract(t1k, t2k)?.chain(extract(t1v, t2v)?)),
         (IpAddress, IpAddress) => Ok(vec![]),
         (Uuid, Uuid) => Ok(vec![]),
+        (Json, Json) => Ok(vec![]),
         _ => Err(Error::InvalidPrestoType),
     }
 }
@@ -194,6 +195,7 @@ pub enum PrestoTy {
     Map(Box<PrestoTy>, Box<PrestoTy>),
     Decimal(usize, usize),
     IpAddress,
+    Json,
     Unknown,
 }
 
@@ -303,6 +305,7 @@ impl PrestoTy {
             }
             RawPrestoTy::IpAddress => PrestoTy::IpAddress,
             RawPrestoTy::Uuid => PrestoTy::Uuid,
+            RawPrestoTy::Json => PrestoTy::Json,
             _ => return Err(Error::InvalidTypeSignature),
         };
 
@@ -367,6 +370,7 @@ impl PrestoTy {
             ],
             IpAddress => vec![],
             Uuid => vec![],
+            Json => vec![],
         };
 
         TypeSignature::new(raw_ty, params)
@@ -412,6 +416,7 @@ impl PrestoTy {
             .into(),
             IpAddress => RawPrestoTy::IpAddress.to_str().into(),
             Uuid => RawPrestoTy::Uuid.to_str().into(),
+            Json => RawPrestoTy::Json.to_str().into(),
         }
     }
 
@@ -438,6 +443,7 @@ impl PrestoTy {
             Map(_, _) => RawPrestoTy::Map,
             IpAddress => RawPrestoTy::IpAddress,
             Uuid => RawPrestoTy::Uuid,
+            Json => RawPrestoTy::Json,
         }
     }
 }

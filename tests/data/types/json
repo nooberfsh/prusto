@@ -1,0 +1,19 @@
+{
+    "columns": [
+        {
+            "name": "a",
+            "type": "json",
+            "typeSignature": {
+                "rawType": "json",
+                "typeArguments": [],
+                "literalArguments": [],
+                "arguments": []
+            }
+        }
+    ],
+    "data": [
+        [
+            "abc"
+        ]
+    ]
+}

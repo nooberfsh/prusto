@@ -1,5 +1,6 @@
 use lazy_static::lazy_static;
 use regex::Regex;
+use std::fmt::Display;
 
 #[derive(Debug, PartialEq)]
 pub enum RoleType {
@@ -36,25 +37,27 @@ impl SelectedRole {
     }
 }
 
-impl ToString for RoleType {
-    fn to_string(&self) -> String {
+impl Display for RoleType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use RoleType::*;
-        match self {
+        let str = match self {
             Role => "ROLE".to_string(),
             All => "ALL".to_string(),
             None => "NONE".to_string(),
-        }
+        };
+        write!(f, "{}", str)
     }
 }
 
-impl ToString for SelectedRole {
-    fn to_string(&self) -> String {
+impl Display for SelectedRole {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let ty = self.ty.to_string();
-        if let Some(role) = &self.role {
+        let str = if let Some(role) = &self.role {
             format!("{}{{{}}}", ty, role)
         } else {
             ty
-        }
+        };
+        write!(f, "{}", str)
     }
 }
 
