@@ -15,12 +15,12 @@ impl Presto for Value {
         PrestoTy::Json
     }
 
-    fn seed<'a, 'de>(ctx: &'a Context<'a>) -> Self::Seed<'a, 'de> {
+    fn seed<'a, 'de>(_: &'a Context<'a>) -> Self::Seed<'a, 'de> {
         ValueSeed
     }
 
     fn empty() -> Self {
-        Value::empty()
+        Default::default()
     }
 }
 

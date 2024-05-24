@@ -34,12 +34,11 @@ pub struct NamedTypeSignature {
     pub type_signature: TypeSignature,
 }
 
+#[non_exhaustive]
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct RowFieldName {
     pub name: String,
-    #[serde(skip)]
-    delimited: (), // deprecated
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -146,10 +145,7 @@ impl TypeSignature {
 
 impl RowFieldName {
     pub fn new(name: String) -> Self {
-        RowFieldName {
-            name,
-            delimited: (),
-        }
+        RowFieldName { name }
     }
 }
 
@@ -264,7 +260,6 @@ mod tests {
                     NamedTypeSignature {
                         field_name: Some(RowFieldName {
                             name: "y".to_string(),
-                            delimited: (),
                         }),
                         type_signature: TypeSignature {
                             raw_type: RawPrestoTy::Double,

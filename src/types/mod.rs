@@ -14,7 +14,7 @@ mod option;
 mod row;
 mod seq;
 mod string;
-pub(self) mod util;
+mod util;
 pub mod uuid;
 
 pub use self::uuid::*;
@@ -42,16 +42,14 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::sync::Arc;
 
-use derive_more::Display;
-use iterable::*;
-use serde::de::{DeserializeSeed, IntoDeserializer};
-use serde::Serialize;
-
-use crate::PrestoTy::Uuid;
 use crate::{
     ClientTypeSignatureParameter, Column, NamedTypeSignature, RawPrestoTy, RowFieldName,
     TypeSignature,
 };
+use derive_more::Display;
+use iterable::*;
+use serde::de::DeserializeSeed;
+use serde::Serialize;
 
 //TODO: refine it
 #[derive(Display, Debug)]
@@ -94,7 +92,7 @@ impl<'a> Context<'a> {
     pub fn new<T: Presto>(provided: &'a PrestoTy) -> Result<Self, Error> {
         let target = T::ty();
         let ret = extract(&target, provided)?;
-        let map = HashMap::from_iter(ret.into_iter());
+        let map = HashMap::from_iter(ret);
         Ok(Context {
             ty: provided,
             map: Arc::new(map),
