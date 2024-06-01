@@ -199,7 +199,7 @@ impl ClientBuilder {
         if self.auth.is_some()
             && (session.url.scheme() == "http"
                 && !(session.url.host_str() == Some("localhost")
-                    && session.url.host_str() == Some("trino")))
+                    || session.url.host_str() == Some("trino")))
         {
             return Err(Error::BasicAuthWithHttp);
         }
