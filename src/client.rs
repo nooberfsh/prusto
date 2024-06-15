@@ -391,6 +391,88 @@ fn need_retry(e: &Error) -> bool {
     }
 }
 
+struct MyStream<'a, T: Presto + 'static> {
+    inner: QueryInternal<'a, T>,
+    phantom: std::marker::PhantomData<T>,
+}
+
+enum QueryInternal<'a, T: Presto + 'static> {
+    Query {
+        sql: String,
+        client: &'a Client,
+    },
+    Next {
+        already: Vec<T>,
+        next: Option<String>,
+        client: &'a Client,
+    },
+}
+
+impl<'a, T: Presto + 'static> MyStream<'a, T> {
+    async fn next_and_self(self) -> Result<Option<(T, Self)>> {
+        match self.inner {
+            QueryInternal::Query { sql, client } => {
+                let res = client.get_retry::<T>(sql).await?;
+                let next = res.next_uri.clone();
+                let mut already = res.data_set.map(|d| d.into_vec()).unwrap_or_default();
+                already.reverse();
+                Ok(already.pop().map(|v| {
+                    (
+                        v,
+                        MyStream {
+                            inner: QueryInternal::Next {
+                                already,
+                                next,
+                                client,
+                            },
+                            phantom: std::marker::PhantomData,
+                        },
+                    )
+                }))
+            }
+            QueryInternal::Next {
+                mut already,
+                next,
+                client,
+            } => {
+                if let Some(v) = already.pop() {
+                    Ok(Some((
+                        v,
+                        MyStream {
+                            inner: QueryInternal::Next {
+                                already,
+                                next,
+                                client,
+                            },
+                            phantom: std::marker::PhantomData,
+                        },
+                    )))
+                } else if let Some(url) = next {
+                    let res = client.get_next_retry::<T>(&url).await?;
+                    let next = res.next_uri.clone();
+                    let mut already = res.data_set.map(|d| d.into_vec()).unwrap_or_default();
+                    already.reverse();
+                    Ok(already.pop().map(|v| {
+                        (
+                            v,
+                            MyStream {
+                                inner: QueryInternal::Next {
+                                    already,
+                                    next,
+                                    client,
+                                },
+                                phantom: std::marker::PhantomData,
+                            },
+                        )
+                    }))
+                } else {
+                    Ok(None)
+                }
+            }
+        }
+    }
+}
+
 impl Client {
     pub async fn get_all<T: Presto + 'static>(&self, sql: String) -> Result<DataSet<T>> {
         let res = self.get_retry(sql).await?;
@@ -413,6 +495,41 @@ impl Client {
         } else {
             Err(Error::EmptyData)
         }
+    }
+
+    /// Return a `futures::TryStream` of results from a query.
+    ///
+    /// # Example
+    ///
+    /// You can iterate over the rows from a query using a `while` loop:
+    /// ```no_run
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// use prusto::{ Presto,Client };
+    /// use futures::stream::TryStreamExt;
+    ///
+    /// #[derive(Presto)]
+    /// struct MyRow {
+    ///   a: i32,
+    ///   b: String,
+    /// }
+    ///
+    /// let client: Client = unimplemented!();
+    ///
+    /// let results = client.stream::<MyRow>("SELECT * FROM my_table".to_string());
+    /// while let Some(MyRow { a, b }) = results.try_next().await? {
+    ///     println!("This row has {a} and {b}");
+    /// }
+    /// # Ok(())
+    /// # }
+    pub fn stream<T: Presto + 'static>(
+        &self,
+        sql: String,
+    ) -> impl futures::stream::Stream<Item = Result<T>> + std::marker::Unpin + '_ {
+        let stream = MyStream {
+            inner: QueryInternal::Query { sql, client: self },
+            phantom: std::marker::PhantomData,
+        };
+        Box::pin(futures::stream::try_unfold(stream, MyStream::next_and_self))
     }
 
     pub async fn execute(&self, sql: String) -> Result<ExecuteResult> {
