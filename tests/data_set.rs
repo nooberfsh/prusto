@@ -6,7 +6,7 @@ use std::io::Read;
 use std::iter::FromIterator;
 use std::str::FromStr;
 
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
 use maplit::{btreemap, hashmap};
 use serde_json::value::Value;
 
@@ -385,14 +385,14 @@ fn test_date_time() {
         a: NaiveDate,
         b: NaiveTime,
         c: NaiveDateTime,
+        d: DateTime<FixedOffset>,
     }
 
     let (s, v) = read("date_time");
-    let d = serde_json::from_str::<DataSet<A>>(&s).unwrap();
-    assert_ds(d.clone(), v);
-
-    let d = d.into_vec();
-    assert_eq!(d.len(), 1);
+    let ds = serde_json::from_str::<DataSet<A>>(&s).unwrap();
+    assert_ds(ds.clone(), v);
+    let ds = ds.into_vec();
+    assert_eq!(ds.len(), 1);
 
     let a = NaiveDate::from_ymd_opt(2001, 8, 22).unwrap();
     let b = NaiveTime::from_hms_milli_opt(1, 2, 3, 456).unwrap();
@@ -400,7 +400,12 @@ fn test_date_time() {
         .unwrap()
         .and_hms_milli_opt(3, 4, 5, 321)
         .unwrap();
-    assert_eq!(d[0], A { a, b, c });
+    let d = DateTime::parse_from_str(
+        "2001-08-22 03:04:05.321 +00:00",
+        "%Y-%m-%d %H:%M:%S%.3f %:z",
+    )
+    .unwrap();
+    assert_eq!(ds[0], A { a, b, c, d });
 }
 
 #[test]
