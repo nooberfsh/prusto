@@ -441,14 +441,7 @@ impl Client {
             add_session_header(req, &session)
         };
 
-        let req = if let Some(auth) = self.auth.as_ref() {
-            match auth {
-                Auth::Basic(u, p) => req.basic_auth(u, p.as_ref()),
-            }
-        } else {
-            req
-        };
-
+        let req = self.auth_req(req);
         self.send(req).await
     }
 
@@ -459,7 +452,18 @@ impl Client {
             add_prepare_header(req, &session)
         };
 
+        let req = self.auth_req(req);
         self.send(req).await
+    }
+
+    fn auth_req(&self, req: RequestBuilder) -> RequestBuilder {
+        if let Some(auth) = self.auth.as_ref() {
+            match auth {
+                Auth::Basic(u, p) => req.basic_auth(u, p.as_ref()),
+            }
+        } else {
+            req
+        }
     }
 
     async fn send<T: Presto + 'static>(&self, req: RequestBuilder) -> Result<QueryResult<T>> {
