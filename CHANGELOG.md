@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://book.async.rs/overview
 
 ## [Unreleased]
 
+## [0.5.2](https://github.com/nooberfsh/prusto/compare/prusto-v0.5.1...prusto-v0.5.2) - 2024-12-06
+
+### Added
+
+- add timestamp with timezone support
+- add json support
+
+### Fixed
+
+- fix cargo clippy warnings
+
+### Other
+
+- add auth info to the next_uri request
+- support up to 32 fields for Structs
+- Adds visiting unit type for optional data
+- allow unverified certificates
+- update changelog
+
 ## [0.5.1] - 2023-10-19
 - Make Client::get and some functions public [#29](https://github.com/nooberfsh/prusto/pull/29)
 
