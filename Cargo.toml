@@ -1,6 +1,6 @@
 [package]
 name = "prusto"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["nooberfsh <nooberfsh@gmail.com>"]
 edition = "2021"
 description = "A presto/trino client library"
