@@ -196,7 +196,11 @@ impl ClientBuilder {
         let session = self.session.build()?;
         let max_attempt = self.max_attempt;
 
-        if self.auth.is_some() && session.url.scheme() == "http" {
+        if self.auth.is_some()
+            && (session.url.scheme() == "http"
+                && !(session.url.host_str() == Some("localhost")
+                    || session.url.host_str() == Some("trino")))
+        {
             return Err(Error::BasicAuthWithHttp);
         }
 
