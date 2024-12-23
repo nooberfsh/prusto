@@ -10,6 +10,7 @@ mod header;
 pub mod models;
 #[cfg(feature = "presto")]
 mod presto_header;
+mod proxy;
 pub mod selected_role;
 pub mod session;
 pub mod ssl;

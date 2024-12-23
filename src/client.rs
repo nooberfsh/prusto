@@ -15,6 +15,7 @@ use crate::error::{Error, Result};
 use crate::header::*;
 #[cfg(feature = "presto")]
 use crate::presto_header::*;
+use crate::proxy::{ProxyAuth, ProxyBuilder};
 use crate::selected_role::SelectedRole;
 use crate::session::{Session, SessionBuilder};
 use crate::ssl::Ssl;
@@ -23,7 +24,6 @@ use crate::{DataSet, Presto, QueryResult, Row};
 
 // TODO:
 // allow_redirects
-// proxies
 // cancel
 
 pub struct Client {
@@ -40,6 +40,7 @@ pub struct ClientBuilder {
     max_attempt: usize,
     ssl: Option<Ssl>,
     no_verify: bool,
+    proxy: ProxyBuilder,
 }
 
 #[derive(Debug)]
@@ -56,6 +57,7 @@ impl ClientBuilder {
             max_attempt: 3,
             ssl: None,
             no_verify: false,
+            proxy: ProxyBuilder::default(),
         }
     }
 
@@ -192,6 +194,21 @@ impl ClientBuilder {
         self
     }
 
+    pub fn proxy(mut self, url: impl ToString) -> Self {
+        self.proxy.url = Some(url.to_string());
+        self
+    }
+
+    pub fn proxy_basic_auth(mut self, user: impl ToString, pass: impl ToString) -> Self {
+        self.proxy.auth = Some(ProxyAuth::Basic(user.to_string(), pass.to_string()));
+        self
+    }
+
+    pub fn proxy_custom_http_auth(mut self, h: http::header::HeaderValue) -> Self {
+        self.proxy.auth = Some(ProxyAuth::CustomHTTP(h));
+        self
+    }
+
     pub fn build(self) -> Result<Client> {
         let session = self.session.build()?;
         let max_attempt = self.max_attempt;
@@ -211,6 +228,10 @@ impl ClientBuilder {
             if let Some(root) = &ssl.root_cert {
                 client_builder = client_builder.add_root_certificate(root.0.clone());
             }
+        }
+
+        if let Some(proxy) = self.proxy.build()? {
+            client_builder = client_builder.proxy(proxy);
         }
 
         let cli = Client {
